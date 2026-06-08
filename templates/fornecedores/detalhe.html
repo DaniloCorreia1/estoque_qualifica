@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}{{ fornecedor }} — Fornecedor{% endblock %}
+{% block page_title %}Detalhes do Fornecedor{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-5">
+  <div class="dark:bg-gray-800 bg-white rounded-xl border dark:border-gray-700 border-gray-200 shadow-sm p-6">
+    <div class="flex items-start justify-between gap-4 mb-6">
+      <div>
+        <h2 class="font-display font-bold text-2xl dark:text-white text-gray-900">{{ fornecedor }}</h2>
+        {% if fornecedor.nome_fantasia %}<p class="dark:text-gray-400 text-gray-500">{{ fornecedor.nome }}</p>{% endif %}
+      </div>
+      <span class="px-3 py-1 rounded-full text-sm {% if fornecedor.status == 'ativo' %}bg-green-900/50 text-green-400{% else %}bg-gray-700 text-gray-400{% endif %}">
+        {{ fornecedor.get_status_display }}
+      </span>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+      {% if fornecedor.documento %}<div><span class="dark:text-gray-400 text-gray-500">CPF/CNPJ:</span> <span class="dark:text-white text-gray-900 ml-1">{{ fornecedor.documento }}</span></div>{% endif %}
+      {% if fornecedor.email %}<div><span class="dark:text-gray-400 text-gray-500">E-mail:</span> <a href="mailto:{{ fornecedor.email }}" class="text-green-400 ml-1">{{ fornecedor.email }}</a></div>{% endif %}
+      {% if fornecedor.telefone %}<div><span class="dark:text-gray-400 text-gray-500">Telefone:</span> <span class="dark:text-white text-gray-900 ml-1">{{ fornecedor.telefone }}</span></div>{% endif %}
+      {% if fornecedor.cidade %}<div><span class="dark:text-gray-400 text-gray-500">Cidade:</span> <span class="dark:text-white text-gray-900 ml-1">{{ fornecedor.cidade }}/{{ fornecedor.estado }}</span></div>{% endif %}
+      <div><span class="dark:text-gray-400 text-gray-500">Prazo entrega:</span> <span class="dark:text-white text-gray-900 ml-1">{{ fornecedor.prazo_entrega }} dias</span></div>
+      <div><span class="dark:text-gray-400 text-gray-500">Produtos:</span> <span class="dark:text-white text-gray-900 ml-1">{{ fornecedor.total_produtos }}</span></div>
+    </div>
+    {% if fornecedor.observacoes %}
+    <div class="mt-4 p-3 dark:bg-gray-700 bg-gray-50 rounded-lg text-sm dark:text-gray-300 text-gray-600">{{ fornecedor.observacoes }}</div>
+    {% endif %}
+    <div class="flex gap-3 mt-6">
+      <a href="{% url 'fornecedores:lista' %}" class="px-4 py-2 dark:bg-gray-700 bg-gray-100 dark:text-gray-300 text-gray-700 rounded-lg text-sm hover:opacity-80">← Voltar</a>
+      {% if user.is_admin %}
+      <a href="{% url 'fornecedores:editar' fornecedor.pk %}" class="px-4 py-2 bg-blue-600/20 text-blue-400 rounded-lg text-sm hover:bg-blue-600/30">Editar</a>
+      {% endif %}
+    </div>
+  </div>
+  {% if produtos %}
+  <div class="dark:bg-gray-800 bg-white rounded-xl border dark:border-gray-700 border-gray-200 shadow-sm overflow-hidden">
+    <div class="px-6 py-4 border-b dark:border-gray-700 border-gray-200"><h3 class="font-display font-semibold dark:text-white text-gray-900 text-sm">Produtos deste fornecedor</h3></div>
+    <div class="divide-y dark:divide-gray-700 divide-gray-100">
+      {% for p in produtos %}
+      <a href="{% url 'produtos:detalhe' p.pk %}" class="flex items-center justify-between px-6 py-3 hover:dark:bg-gray-750 hover:bg-gray-50 transition-colors">
+        <div><p class="text-sm font-medium dark:text-white text-gray-900">{{ p.nome }}</p><p class="text-xs dark:text-gray-400 text-gray-500">{{ p.codigo }}</p></div>
+        <span class="text-sm font-medium {% if p.esta_zerado %}text-red-400{% elif p.esta_abaixo_minimo %}text-yellow-400{% else %}text-green-400{% endif %}">{{ p.quantidade|floatformat:2 }} {{ p.get_unidade_display }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

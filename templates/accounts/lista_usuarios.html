@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Usuários{% endblock %}
+{% block page_title %}Gerenciar Usuários{% endblock %}
+{% block content %}
+<div class="space-y-5">
+  <div class="flex justify-end">
+    <a href="{% url 'accounts:cadastrar_usuario' %}" class="flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      Novo Usuário
+    </a>
+  </div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for u in usuarios %}
+    <div class="dark:bg-gray-800 bg-white rounded-xl border dark:border-gray-700 border-gray-200 shadow-sm p-5">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white font-bold">
+          {% if u.foto %}<img src="{{ u.foto.url }}" class="w-10 h-10 rounded-full object-cover" alt="">
+          {% else %}{{ u.first_name|first|upper }}{{ u.last_name|first|upper }}{% endif %}
+        </div>
+        <div>
+          <p class="font-medium dark:text-white text-gray-900">{{ u.get_full_name|default:u.username }}</p>
+          <p class="text-xs dark:text-gray-400 text-gray-500">{{ u.username }}</p>
+        </div>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-xs {% if u.perfil == 'admin' %}bg-purple-900/50 text-purple-400{% else %}bg-blue-900/50 text-blue-400{% endif %}">{{ u.get_perfil_display }}</span>
+      </div>
+      <div class="text-xs dark:text-gray-400 text-gray-500 space-y-1">
+        {% if u.email %}<div>📧 {{ u.email }}</div>{% endif %}
+        {% if u.departamento %}<div>🏢 {{ u.departamento }}</div>{% endif %}
+        <div>📅 Desde {{ u.criado_em|date:"d/m/Y" }}</div>
+        <div class="{% if u.is_active %}text-green-400{% else %}text-red-400{% endif %}">{{ u.is_active|yesno:"✅ Ativo,❌ Inativo" }}</div>
+      </div>
+      <div class="flex gap-2 mt-4">
+        <a href="{% url 'accounts:editar_usuario' u.pk %}" class="flex-1 text-center py-1.5 bg-blue-600/20 text-blue-400 rounded-lg text-sm hover:bg-blue-600/30 transition-colors">Editar</a>
+        {% if u != request.user %}
+        <a href="{% url 'accounts:excluir_usuario' u.pk %}" class="py-1.5 px-3 bg-red-600/20 text-red-400 rounded-lg text-sm hover:bg-red-600/30 transition-colors">✕</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

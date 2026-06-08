@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+{% block title %}Relatórios — Estoque Qualifica{% endblock %}
+{% block page_title %}Relatórios{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Filtro de período -->
+  <div class="flex items-center gap-3 flex-wrap">
+    <span class="text-sm dark:text-gray-400 text-gray-500 font-medium">Período:</span>
+    {% for p, label in forloop.parentloop.0|default:'' %}{% endfor %}
+    <a href="?periodo=semanal" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors
+      {% if periodo == 'semanal' %}bg-green-600 text-white{% else %}dark:bg-gray-700 bg-gray-100 dark:text-gray-300 text-gray-700 hover:opacity-80{% endif %}">
+      Semanal (7 dias)
+    </a>
+    <a href="?periodo=quinzenal" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors
+      {% if periodo == 'quinzenal' %}bg-green-600 text-white{% else %}dark:bg-gray-700 bg-gray-100 dark:text-gray-300 text-gray-700 hover:opacity-80{% endif %}">
+      Quinzenal
+    </a>
+    <a href="?periodo=mensal" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors
+      {% if periodo == 'mensal' or not periodo %}bg-green-600 text-white{% else %}dark:bg-gray-700 bg-gray-100 dark:text-gray-300 text-gray-700 hover:opacity-80{% endif %}">
+      Mensal (30 dias)
+    </a>
+    <span class="ml-auto text-xs dark:text-gray-500 text-gray-400">{{ titulo_periodo }}</span>
+  </div>
+
+  <!-- KPIs -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+    <div class="dark:bg-gray-800 bg-white rounded-xl p-4 border dark:border-gray-700 border-gray-200 text-center">
+      <div class="text-2xl mb-1">📦</div>
+      <div class="font-display font-bold text-xl dark:text-white text-gray-900">{{ total_produtos }}</div>
+      <div class="text-xs dark:text-gray-400 text-gray-500">Produtos Ativos</div>
+    </div>
+    <div class="dark:bg-gray-800 bg-white rounded-xl p-4 border dark:border-gray-700 border-gray-200 text-center">
+      <div class="text-2xl mb-1">🏢</div>
+      <div class="font-display font-bold text-xl dark:text-white text-gray-900">{{ total_fornecedores }}</div>
+      <div class="text-xs dark:text-gray-400 text-gray-500">Fornecedores</div>
+    </div>
+    <div class="dark:bg-gray-800 bg-white rounded-xl p-4 border dark:border-gray-700 border-gray-200 text-center">
+      <div class="text-2xl mb-1">📈</div>
+      <div class="font-display font-bold text-lg text-green-400">{{ total_entradas_qtd|floatformat:0 }}</div>
+      <div class="text-xs dark:text-gray-400 text-gray-500">Entradas (un)</div>
+    </div>
+    <div class="dark:bg-gray-800 bg-white rounded-xl p-4 border dark:border-gray-700 border-gray-200 text-center">
+      <div class="text-2xl mb-1">📉</div>
+      <div class="font-display font-bold text-lg text-red-400">{{ total_saidas_qtd|floatformat:0 }}</div>
+      <div class="text-xs dark:text-gray-400 text-gray-500">Saídas (un)</div>
+    </div>
+    <div class="dark:bg-gray-800 bg-white rounded-xl p-4 border dark:border-gray-700 border-gray-200 text-center">
+      <div class="text-2xl mb-1">💵</div>
+      <div class="font-display font-bold text-lg text-green-400">R$ {{ total_entradas_valor|floatformat:0 }}</div>
+      <div class="text-xs dark:text-gray-400 text-gray-500">Valor Entrado</div>
+    </div>
+    <div class="dark:bg-gray-800 bg-white rounded-xl p-4 border dark:border-gray-700 border-gray-200 text-center">
+      <div class="text-2xl mb-1">⚠️</div>
+      <div class="font-display font-bold text-xl {% if produtos_zerados_count > 0 %}text-red-400{% else %}text-green-400{% endif %}">{{ produtos_zerados_count }}</div>
+      <div class="text-xs dark:text-gray-400 text-gray-500">Zerados</div>
+    </div>
+  </div>
+
+  <!-- Gráficos -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Gráfico de linha -->
+    <div class="dark:bg-gray-800 bg-white rounded-xl border dark:border-gray-700 border-gray-200 shadow-sm p-6">
+      <h3 class="font-display font-semibold dark:text-white text-gray-900 text-sm mb-4">Entradas × Saídas no período</h3>
+      <div class="h-52"><canvas id="chartLinhaRelatorio"></canvas></div>
+    </div>
+    <!-- Gráfico de barras por categoria -->
+    <div class="dark:bg-gray-800 bg-white rounded-xl border dark:border-gray-700 border-gray-200 shadow-sm p-6">
+      <h3 class="font-display font-semibold dark:text-white text-gray-900 text-sm mb-4">Produtos por Categoria</h3>
+      <div class="h-52"><canvas id="chartCategorias"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Top produtos -->
+  <div class="dark:bg-gray-800 bg-white rounded-xl border dark:border-gray-700 border-gray-200 shadow-sm overflow-hidden">
+    <div class="px-6 py-4 border-b dark:border-gray-700 border-gray-200">
+      <h3 class="font-display font-semibold dark:text-white text-gray-900 text-sm">🏆 Top Produtos Mais Movimentados</h3>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead><tr class="dark:bg-gray-900/50 bg-gray-50">
+          <th class="text-left px-6 py-3 text-xs dark:text-gray-400 text-gray-500 uppercase">Posição</th>
+          <th class="text-left px-4 py-3 text-xs dark:text-gray-400 text-gray-500 uppercase">Produto</th>
+          <th class="text-right px-6 py-3 text-xs dark:text-gray-400 text-gray-500 uppercase">Total Movimentado</th>
+        </tr></thead>
+        <tbody class="divide-y dark:divide-gray-700 divide-gray-100">
+          {% for item in top_produtos %}
+          <tr class="hover:dark:bg-gray-750 hover:bg-gray-50">
+            <td class="px-6 py-3">
+              <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold
+                {% if forloop.counter == 1 %}bg-yellow-500 text-white
+                {% elif forloop.counter == 2 %}bg-gray-400 text-white
+                {% elif forloop.counter == 3 %}bg-orange-600 text-white
+                {% else %}dark:bg-gray-700 bg-gray-100 dark:text-gray-300 text-gray-600{% endif %}">
+                {{ forloop.counter }}
+              </span>
+            </td>
+            <td class="px-4 py-3">
+              <p class="font-medium dark:text-white text-gray-900">{{ item.produto__nome }}</p>
+              <p class="text-xs dark:text-gray-400 text-gray-500">{{ item.produto__codigo }}</p>
+            </td>
+            <td class="px-6 py-3 text-right font-display font-bold text-green-400">{{ item.total_mov|floatformat:0 }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" class="px-6 py-8 text-center dark:text-gray-400 text-gray-500">Sem movimentações no período.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Produtos críticos -->
+  {% if produtos_criticos %}
+  <div class="dark:bg-gray-800 bg-white rounded-xl border dark:border-red-800 border-red-200 shadow-sm overflow-hidden">
+    <div class="px-6 py-4 bg-red-900/20 border-b dark:border-red-800 border-red-200">
+      <h3 class="font-display font-semibold text-red-400 text-sm">🔴 Produtos com Estoque Crítico</h3>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead><tr class="dark:bg-gray-900/50 bg-gray-50">
+          <th class="text-left px-6 py-3 text-xs dark:text-gray-400 text-gray-500 uppercase">Produto</th>
+          <th class="text-right px-4 py-3 text-xs dark:text-gray-400 text-gray-500 uppercase">Estoque Atual</th>
+          <th class="text-right px-4 py-3 text-xs dark:text-gray-400 text-gray-500 uppercase">Mínimo</th>
+          <th class="text-left px-6 py-3 text-xs dark:text-gray-400 text-gray-500 uppercase hidden md:table-cell">Fornecedor</th>
+        </tr></thead>
+        <tbody class="divide-y dark:divide-gray-700 divide-gray-100">
+          {% for p in produtos_criticos %}
+          <tr class="hover:dark:bg-gray-750 hover:bg-gray-50">
+            <td class="px-6 py-3 font-medium dark:text-white text-gray-900">{{ p.nome }}</td>
+            <td class="px-4 py-3 text-right {% if p.esta_zerado %}text-red-400 font-bold{% else %}text-yellow-400{% endif %}">{{ p.quantidade|floatformat:2 }}</td>
+            <td class="px-4 py-3 text-right dark:text-gray-400 text-gray-500">{{ p.estoque_minimo|floatformat:2 }}</td>
+            <td class="px-6 py-3 dark:text-gray-400 text-gray-500 text-xs hidden md:table-cell">{{ p.fornecedor|default:"—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Tabela movimentações recentes -->
+  <div class="dark:bg-gray-800 bg-white rounded-xl border dark:border-gray-700 border-gray-200 shadow-sm overflow-hidden">
+    <div class="px-6 py-4 border-b dark:border-gray-700 border-gray-200 flex items-center justify-between">
+      <h3 class="font-display font-semibold dark:text-white text-gray-900 text-sm">Movimentações do Período</h3>
+      <a href="{% url 'movimentacoes:lista' %}" class="text-xs text-green-400 hover:text-green-300">Ver todas →</a>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead><tr class="dark:bg-gray-900/50 bg-gray-50">
+          <th class="text-left px-5 py-3 text-xs dark:text-gray-400 text-gray-500 uppercase">Produto</th>
+          <th class="text-left px-4 py-3 text-xs dark:text-gray-400 text-gray-500 uppercase hidden sm:table-cell">Tipo</th>
+          <th class="text-right px-4 py-3 text-xs dark:text-gray-400 text-gray-500 uppercase">Qtd</th>
+          <th class="text-left px-5 py-3 text-xs dark:text-gray-400 text-gray-500 uppercase hidden md:table-cell">Data</th>
+        </tr></thead>
+        <tbody class="divide-y dark:divide-gray-700 divide-gray-100">
+          {% for m in movimentacoes_recentes %}
+          <tr class="hover:dark:bg-gray-750 hover:bg-gray-50">
+            <td class="px-5 py-2.5 font-medium dark:text-white text-gray-900">{{ m.produto.nome }}</td>
+            <td class="px-4 py-2.5 hidden sm:table-cell"><span class="px-2 py-0.5 rounded-full text-xs {% if m.tipo == 'entrada' %}bg-green-900/50 text-green-400{% elif m.tipo == 'saida' %}bg-red-900/50 text-red-400{% else %}bg-blue-900/50 text-blue-400{% endif %}">{{ m.get_tipo_display }}</span></td>
+            <td class="px-4 py-2.5 text-right dark:text-white text-gray-900">{{ m.quantidade|floatformat:2 }}</td>
+            <td class="px-5 py-2.5 dark:text-gray-400 text-gray-500 text-xs hidden md:table-cell">{{ m.criado_em|date:"d/m/Y H:i" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="px-5 py-8 text-center dark:text-gray-400 text-gray-500">Sem movimentações no período.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const diasLabels = {{ dias_labels_json|safe }};
+  const entradas = {{ dados_entradas_json|safe }};
+  const saidas = {{ dados_saidas_json|safe }};
+  const catLabels = {{ cat_labels_json|safe }};
+  const catValores = {{ cat_valores_json|safe }};
+
+  const isDark = document.documentElement.classList.contains('dark');
+  const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+  const labelColor = isDark ? '#9ca3af' : '#6b7280';
+
+  new Chart(document.getElementById('chartLinhaRelatorio').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: diasLabels,
+      datasets: [
+        { label: 'Entradas', data: entradas, borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.1)', borderWidth: 2, fill: true, tension: 0.4, pointRadius: 3 },
+        { label: 'Saídas', data: saidas, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)', borderWidth: 2, fill: true, tension: 0.4, pointRadius: 3 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: labelColor, font: { size: 11 } } } },
+      scales: {
+        x: { grid: { color: gridColor }, ticks: { color: labelColor, font: { size: 10 } } },
+        y: { grid: { color: gridColor }, ticks: { color: labelColor, font: { size: 10 } }, beginAtZero: true }
+      }
+    }
+  });
+
+  if (catLabels.length > 0) {
+    new Chart(document.getElementById('chartCategorias').getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: catLabels,
+        datasets: [{
+          label: 'Produtos',
+          data: catValores,
+          backgroundColor: ['#22c55e','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#06b6d4'].slice(0, catLabels.length),
+          borderRadius: 6,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { color: gridColor }, ticks: { color: labelColor, font: { size: 10 } } },
+          y: { grid: { color: gridColor }, ticks: { color: labelColor, font: { size: 10 } }, beginAtZero: true }
+        }
+      }
+    });
+  }
+</script>
+{% endblock %}

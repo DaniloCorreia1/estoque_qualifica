@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Movimentação #{{ movimentacao.pk }}{% endblock %}
+{% block page_title %}Detalhe da Movimentação{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <div class="dark:bg-gray-800 bg-white rounded-xl border dark:border-gray-700 border-gray-200 shadow-sm p-6">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="font-display font-bold text-xl dark:text-white text-gray-900">Movimentação #{{ movimentacao.pk }}</h2>
+      <span class="px-3 py-1 rounded-full text-sm font-medium {% if movimentacao.tipo == 'entrada' %}bg-green-900/50 text-green-400{% elif movimentacao.tipo == 'saida' %}bg-red-900/50 text-red-400{% else %}bg-blue-900/50 text-blue-400{% endif %}">{{ movimentacao.get_tipo_display }}</span>
+    </div>
+    <div class="grid grid-cols-2 gap-4 text-sm">
+      <div><span class="dark:text-gray-400 text-gray-500">Produto:</span> <a href="{% url 'produtos:detalhe' movimentacao.produto.pk %}" class="text-green-400 ml-1 hover:underline">{{ movimentacao.produto.nome }}</a></div>
+      <div><span class="dark:text-gray-400 text-gray-500">Quantidade:</span> <span class="dark:text-white text-gray-900 font-medium ml-1">{{ movimentacao.quantidade|floatformat:2 }} {{ movimentacao.produto.get_unidade_display }}</span></div>
+      <div><span class="dark:text-gray-400 text-gray-500">Motivo:</span> <span class="dark:text-white text-gray-900 ml-1">{{ movimentacao.motivo }}</span></div>
+      <div><span class="dark:text-gray-400 text-gray-500">Preço unitário:</span> <span class="dark:text-white text-gray-900 ml-1">R$ {{ movimentacao.preco_unitario|floatformat:2 }}</span></div>
+      <div><span class="dark:text-gray-400 text-gray-500">Valor total:</span> <span class="text-green-400 font-medium ml-1">R$ {{ movimentacao.valor_total|floatformat:2 }}</span></div>
+      <div><span class="dark:text-gray-400 text-gray-500">Documento:</span> <span class="dark:text-white text-gray-900 ml-1">{{ movimentacao.numero_documento|default:"—" }}</span></div>
+      <div><span class="dark:text-gray-400 text-gray-500">Estoque anterior:</span> <span class="dark:text-white text-gray-900 ml-1">{{ movimentacao.estoque_anterior|floatformat:2 }}</span></div>
+      <div><span class="dark:text-gray-400 text-gray-500">Estoque posterior:</span> <span class="dark:text-white text-gray-900 ml-1">{{ movimentacao.estoque_posterior|floatformat:2 }}</span></div>
+      <div><span class="dark:text-gray-400 text-gray-500">Usuário:</span> <span class="dark:text-white text-gray-900 ml-1">{{ movimentacao.usuario|default:"—" }}</span></div>
+      <div><span class="dark:text-gray-400 text-gray-500">Data/Hora:</span> <span class="dark:text-white text-gray-900 ml-1">{{ movimentacao.criado_em|date:"d/m/Y H:i:s" }}</span></div>
+    </div>
+    {% if movimentacao.observacoes %}<div class="mt-4 p-3 dark:bg-gray-700 bg-gray-50 rounded-lg text-sm dark:text-gray-300 text-gray-600">{{ movimentacao.observacoes }}</div>{% endif %}
+    <a href="{% url 'movimentacoes:lista' %}" class="inline-block mt-5 px-4 py-2 dark:bg-gray-700 bg-gray-100 dark:text-gray-300 text-gray-700 rounded-lg text-sm hover:opacity-80">← Voltar</a>
+  </div>
+</div>
+{% endblock %}

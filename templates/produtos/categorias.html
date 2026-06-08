@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}Categorias{% endblock %}
+{% block page_title %}Categorias de Produtos{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+  {% if user.is_admin %}
+  <div class="dark:bg-gray-800 bg-white rounded-xl border dark:border-gray-700 border-gray-200 shadow-sm p-5">
+    <h3 class="font-display font-semibold dark:text-white text-gray-900 text-sm mb-4">Nova Categoria</h3>
+    <form method="post" class="space-y-3">
+      {% csrf_token %}
+      {% for field in form %}
+      <div>
+        <label class="block text-xs font-medium dark:text-gray-400 text-gray-500 mb-1">{{ field.label }}</label>
+        {{ field }}
+      </div>
+      {% endfor %}
+      <button type="submit" class="w-full bg-green-600 hover:bg-green-500 text-white py-2 rounded-lg text-sm font-medium transition-colors">Criar Categoria</button>
+    </form>
+  </div>
+  {% endif %}
+  <div class="lg:col-span-2 dark:bg-gray-800 bg-white rounded-xl border dark:border-gray-700 border-gray-200 shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b dark:border-gray-700 border-gray-200"><h3 class="font-display font-semibold dark:text-white text-gray-900 text-sm">Categorias Cadastradas</h3></div>
+    <div class="divide-y dark:divide-gray-700 divide-gray-100">
+      {% for cat in categorias %}
+      <div class="flex items-center justify-between px-5 py-3">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center text-lg" style="background: {{ cat.cor }}22">{{ cat.icone }}</div>
+          <div>
+            <p class="font-medium dark:text-white text-gray-900 text-sm">{{ cat.nome }}</p>
+            <p class="text-xs dark:text-gray-400 text-gray-500">{{ cat.produto_set.count }} produto{{ cat.produto_set.count|pluralize }}</p>
+          </div>
+        </div>
+        {% if user.is_admin %}
+        <a href="{% url 'produtos:excluir_categoria' cat.pk %}" class="p-1.5 text-red-400 hover:bg-red-900/30 rounded-lg transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        </a>
+        {% endif %}
+      </div>
+      {% empty %}
+      <div class="px-5 py-8 text-center dark:text-gray-400 text-gray-500 text-sm">Nenhuma categoria cadastrada.</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
