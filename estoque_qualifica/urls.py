@@ -6,8 +6,34 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.generic import RedirectView
+from django.http import FileResponse, Http404
+import os
+
+
+def servir_sw(request):
+    """
+    Serve o Service Worker na raiz /sw.js
+    ESSENCIAL para o PWA funcionar — o SW precisa estar na raiz do site
+    para ter escopo sobre todas as páginas.
+    """
+    sw_path = os.path.join(settings.BASE_DIR, 'static', 'sw.js')
+    if not os.path.exists(sw_path):
+        raise Http404("sw.js não encontrado")
+    response = FileResponse(
+        open(sw_path, 'rb'),
+        content_type='application/javascript; charset=utf-8'
+    )
+    # Sem cache — o browser precisa sempre verificar a versão mais nova
+    response['Service-Worker-Allowed'] = '/'
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    return response
+
 
 urlpatterns = [
+    # Service Worker na raiz — OBRIGATÓRIO para PWA funcionar corretamente
+    path('sw.js', servir_sw, name='service_worker'),
+
     # Painel administrativo do Django (acesso em /admin/)
     path('admin/', admin.site.urls),
 

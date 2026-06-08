@@ -8,13 +8,19 @@
 
   <!-- PWA Meta Tags -->
   <link rel="manifest" href="/static/manifest.json">
+  <!-- Apple (iOS Safari) -->
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="Estoque Qualifica">
-  <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="EstoqueQ">
+  <link rel="apple-touch-icon" sizes="152x152" href="/static/icons/icon-152.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="/static/icons/icon-192.png">
+  <!-- Android / Chrome -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="application-name" content="EstoqueQ">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="/static/icons/icon-32.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/icon-32.png">
+  <link rel="icon" type="image/png" sizes="96x96" href="/static/icons/icon-96.png">
 
   <title>{% block title %}Estoque Qualifica{% endblock %}</title>
 
@@ -465,13 +471,26 @@
     }
 
     // ============================================================
-    // SERVICE WORKER (PWA)
+    // SERVICE WORKER (PWA) — registrado na RAIZ /sw.js
+    // O escopo precisa ser / para cobrir todo o site
     // ============================================================
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/static/sw.js')
-          .then(reg => console.log('✅ SW registrado:', reg.scope))
-          .catch(err => console.log('SW erro:', err));
+        navigator.serviceWorker.register('/sw.js', { scope: '/' })
+          .then(reg => {
+            console.log('✅ SW registrado com escopo:', reg.scope);
+            // Verifica se há atualização disponível
+            reg.addEventListener('updatefound', () => {
+              const newWorker = reg.installing;
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  console.log('[SW] Nova versão disponível');
+                  newWorker.postMessage({ type: 'SKIP_WAITING' });
+                }
+              });
+            });
+          })
+          .catch(err => console.warn('SW não registrado:', err));
       });
     }
   </script>

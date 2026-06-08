@@ -1,113 +1,112 @@
 /**
  * sw.js - Service Worker do Estoque Qualifica
- * Responsável por fazer o app funcionar offline (PWA)
- * O Service Worker fica entre o app e a internet, guardando arquivos em cache
+ * IMPORTANTE: Este arquivo precisa ser servido em /sw.js (raiz do site)
+ * para ter escopo sobre todas as páginas do sistema.
  */
 
-// Nome do cache - mude a versão para forçar atualização
-const CACHE_NAME = 'estoque-qualifica-v1.2';
+const CACHE_NAME = 'estoque-qualifica-v2.0';
 
-// Arquivos que serão guardados em cache para funcionar offline
-const ARQUIVOS_PARA_CACHE = [
-  '/',
+// Arquivos essenciais que ficam em cache para funcionar offline
+const ARQUIVOS_CACHE = [
   '/dashboard/',
   '/static/manifest.json',
-  'https://cdn.tailwindcss.com',
-  'https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap',
+  '/static/icons/icon-192.png',
+  '/static/icons/icon-512.png',
 ];
 
-// ============================================================
-// EVENTO: install - Executado quando o SW é instalado pela 1ª vez
-// ============================================================
+// INSTALA e armazena cache básico
 self.addEventListener('install', function(event) {
-  console.log('[SW] Instalando Service Worker...');
+  console.log('[SW] Instalando v2.0...');
   event.waitUntil(
     caches.open(CACHE_NAME).then(function(cache) {
-      console.log('[SW] Arquivos em cache');
-      // Tenta colocar em cache, mas não falha se algum não carregar
-      return cache.addAll(ARQUIVOS_PARA_CACHE).catch(function(err) {
-        console.log('[SW] Alguns arquivos não foram cacheados:', err);
-      });
-    })
-  );
-  // Ativa imediatamente sem esperar fechar outras abas
-  self.skipWaiting();
-});
-
-// ============================================================
-// EVENTO: activate - Quando o SW entra em uso, limpa caches antigos
-// ============================================================
-self.addEventListener('activate', function(event) {
-  console.log('[SW] Service Worker ativado');
-  event.waitUntil(
-    caches.keys().then(function(nomesDosCache) {
-      return Promise.all(
-        nomesDosCache
-          .filter(function(nome) {
-            // Remove caches antigos (de versões anteriores)
-            return nome !== CACHE_NAME;
-          })
-          .map(function(nome) {
-            console.log('[SW] Removendo cache antigo:', nome);
-            return caches.delete(nome);
-          })
+      // Tenta cachear cada arquivo individualmente — não falha se algum não carregar
+      return Promise.allSettled(
+        ARQUIVOS_CACHE.map(url => cache.add(url).catch(e => console.warn('[SW] Não cacheou:', url)))
       );
     })
   );
-  // Assume controle de todas as abas abertas
+  self.skipWaiting();
+});
+
+// ATIVA e remove caches antigos
+self.addEventListener('activate', function(event) {
+  console.log('[SW] Ativado v2.0');
+  event.waitUntil(
+    caches.keys().then(function(nomes) {
+      return Promise.all(
+        nomes.filter(n => n !== CACHE_NAME).map(n => {
+          console.log('[SW] Removendo cache antigo:', n);
+          return caches.delete(n);
+        })
+      );
+    })
+  );
   self.clients.claim();
 });
 
-// ============================================================
-// EVENTO: fetch - Intercepta todas as requisições de rede
-// Estratégia: Network First (tenta rede, se falhar usa cache)
-// ============================================================
+// INTERCEPTA requisições — estratégia: Network First, fallback para cache
 self.addEventListener('fetch', function(event) {
-  // Só intercepta GET (não intercepta POST para não quebrar formulários)
+  // Ignora requisições não-GET (POST de formulários, APIs, etc.)
   if (event.request.method !== 'GET') return;
 
-  // Não intercepta URLs de autenticação e APIs externas
+  // Ignora URLs de autenticação e admin para não quebrar login
   const url = new URL(event.request.url);
-  if (url.pathname.startsWith('/accounts/login') ||
-      url.pathname.startsWith('/admin/') ||
-      url.pathname.startsWith('/api/')) {
-    return;
-  }
+  if (
+    url.pathname.startsWith('/accounts/') ||
+    url.pathname.startsWith('/admin/') ||
+    url.pathname.startsWith('/api/')
+  ) return;
 
   event.respondWith(
-    // Tenta buscar da rede primeiro
     fetch(event.request)
       .then(function(resposta) {
-        // Se conseguiu da rede, guarda no cache para uso futuro
-        if (resposta && resposta.status === 200) {
-          const respostaClone = resposta.clone();
-          caches.open(CACHE_NAME).then(function(cache) {
-            cache.put(event.request, respostaClone);
-          });
+        // Salva no cache se veio da rede com sucesso
+        if (resposta && resposta.status === 200 && resposta.type !== 'opaque') {
+          const clone = resposta.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         }
         return resposta;
       })
       .catch(function() {
-        // Se falhou na rede (offline), tenta buscar do cache
-        return caches.match(event.request).then(function(respostaCache) {
-          if (respostaCache) {
-            return respostaCache;
-          }
-          // Se não tem nem no cache, retorna página offline
+        // Offline: tenta o cache
+        return caches.match(event.request).then(function(cached) {
+          if (cached) return cached;
+          // Página de fallback offline para documentos HTML
           if (event.request.destination === 'document') {
             return new Response(
               `<!DOCTYPE html>
-              <html lang="pt-BR">
-              <head><meta charset="UTF-8"><title>Sem conexão</title>
-              <style>body{background:#111827;color:#f9fafb;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;flex-direction:column;gap:1rem}h1{font-size:2rem;color:#22c55e}p{color:#9ca3af}</style>
-              </head>
-              <body>
-                <h1>📦 Sem conexão</h1>
-                <p>Você está offline. Algumas funções do Estoque Qualifica precisam de internet.</p>
-                <p>Verifique sua conexão e tente novamente.</p>
-                <button onclick="location.reload()" style="background:#22c55e;color:white;border:none;padding:.75rem 1.5rem;border-radius:.5rem;cursor:pointer;font-size:1rem">Tentar novamente</button>
-              </body></html>`,
-              { headers: { 'Content-Type': 'text/html' } }
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Sem conexão — Estoque Qualifica</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #111827; color: #f9fafb;
+      font-family: sans-serif;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; text-align: center; padding: 2rem;
+      flex-direction: column; gap: 1.5rem;
+    }
+    .icon { font-size: 4rem; }
+    h1 { font-size: 1.5rem; color: #22c55e; }
+    p { color: #9ca3af; font-size: 0.9rem; line-height: 1.6; max-width: 300px; }
+    button {
+      background: #22c55e; color: white; border: none;
+      padding: 0.75rem 2rem; border-radius: 0.5rem;
+      font-size: 1rem; cursor: pointer; margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="icon">📦</div>
+  <h1>Você está offline</h1>
+  <p>Não foi possível conectar ao Estoque Qualifica. Verifique sua internet e tente novamente.</p>
+  <button onclick="location.reload()">Tentar novamente</button>
+</body>
+</html>`,
+              { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
             );
           }
         });
@@ -115,9 +114,7 @@ self.addEventListener('fetch', function(event) {
   );
 });
 
-// ============================================================
-// EVENTO: message - Recebe mensagens do app principal
-// ============================================================
+// Recebe mensagem do app para pular espera
 self.addEventListener('message', function(event) {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
