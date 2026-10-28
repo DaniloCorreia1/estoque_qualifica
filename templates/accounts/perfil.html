@@ -1,24 +1,32 @@
 {% extends 'base.html' %}
+{% load ui %}
 {% block title %}Meu Perfil{% endblock %}
 {% block page_title %}Meu Perfil{% endblock %}
 {% block content %}
-<div class="max-w-2xl mx-auto">
-  <div class="dark:bg-gray-800 bg-white rounded-xl border dark:border-gray-700 border-gray-200 shadow-sm overflow-hidden">
-    <div class="px-6 py-4 border-b dark:border-gray-700 border-gray-200">
-      <h2 class="font-display font-semibold dark:text-white text-gray-900">Meu Perfil</h2>
-    </div>
-    <form method="post" enctype="multipart/form-data" class="p-6 space-y-4">
-      {% csrf_token %}
-      <div class="grid grid-cols-2 gap-4">
-        {% for field in form %}
-        <div>
-          <label class="block text-sm font-medium dark:text-gray-300 text-gray-700 mb-1.5">{{ field.label }}</label>
-          {{ field }}
+<div class="mx-auto max-w-2xl">
+  <div class="card overflow-hidden">
+    <div class="hero rounded-none border-0 border-b border-line px-5 py-6 sm:px-7">
+      <div class="flex items-center gap-4">
+        <span class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/15 text-lg font-bold ring-1 ring-white/30">
+          {% if user.foto %}<img src="{{ user.foto.url }}" class="h-14 w-14 object-cover" width="56" height="56" alt="Sua foto">{% else %}{{ user|iniciais }}{% endif %}
+        </span>
+        <div class="min-w-0">
+          <h2 class="truncate text-lg font-semibold tracking-tight">{{ user.nome_exibicao }}</h2>
+          <p class="text-sm text-white/70">{{ user.get_perfil_display }}</p>
         </div>
+      </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="space-y-5 p-5 sm:p-7">
+      {% csrf_token %}
+      {% include 'components/form_errors.html' with form=form %}
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {% for field in form %}
+        {% include 'components/form_field.html' with field=field %}
         {% endfor %}
       </div>
-      <div class="flex gap-3 pt-2">
-        <button type="submit" class="bg-green-600 hover:bg-green-500 text-white px-6 py-2.5 rounded-lg text-sm font-medium font-display transition-colors">Salvar</button>
+      <div class="flex border-t border-line pt-5 sm:justify-end">
+        <button type="submit" class="btn btn-primary w-full sm:w-auto sm:min-w-[10rem]">{% icon 'check' 'h-4 w-4' %}Salvar</button>
       </div>
     </form>
   </div>

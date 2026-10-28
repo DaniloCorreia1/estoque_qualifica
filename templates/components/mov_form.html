@@ -1,0 +1,33 @@
+{% load ui %}{% comment %}
+  Formulario de entrada/saida de estoque. Parametros: tipo, title, subtitle, icon, info_label, submit_label, submit_icon.
+  Nao usar com "only" (precisa do csrf_token e do form do contexto).
+{% endcomment %}
+{% url 'movimentacoes:lista' as url_lista %}
+<div class="mx-auto max-w-xl">
+  <div class="card overflow-hidden">
+    {% include 'components/card_header.html' with title=title description=subtitle icon=icon %}
+    <form method="post" class="space-y-5 p-5 sm:p-7">
+      {% csrf_token %}
+      {% include 'components/form_errors.html' with form=form %}
+
+      <div>
+        {% include 'components/form_field.html' with field=form.produto %}
+        <div id="estoque-info" class="mt-2 flex min-h-[1.5rem] flex-wrap items-center gap-2 text-xs text-muted" aria-live="polite"></div>
+      </div>
+
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {% include 'components/form_field.html' with field=form.quantidade %}
+        {% include 'components/form_field.html' with field=form.motivo %}
+        {% include 'components/form_field.html' with field=form.preco_unitario %}
+        {% include 'components/form_field.html' with field=form.numero_documento %}
+      </div>
+
+      {% include 'components/form_field.html' with field=form.observacoes %}
+
+      <div class="flex flex-col-reverse gap-3 border-t border-line pt-5 sm:flex-row">
+        <a href="{{ url_lista }}" class="btn btn-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary sm:flex-1">{% icon submit_icon 'h-4 w-4' %}{{ submit_label }}</button>
+      </div>
+    </form>
+  </div>
+</div>

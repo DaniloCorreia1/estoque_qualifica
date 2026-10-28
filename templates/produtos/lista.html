@@ -1,145 +1,116 @@
 {% extends 'base.html' %}
+{% load ui %}
 {% block title %}Produtos — Estoque Qualifica{% endblock %}
 {% block page_title %}Produtos{% endblock %}
 
 {% block content %}
+{% url 'produtos:criar' as url_criar %}
 <div class="space-y-5">
 
   <!-- Barra de ações -->
-  <div class="flex flex-col sm:flex-row gap-3">
-    <form method="get" class="flex gap-2 flex-1 flex-wrap">
-      <div class="relative flex-1 min-w-48">
-        <input type="text" name="busca" value="{{ busca }}" placeholder="Buscar produto, código..."
-          class="form-input pl-10 dark:bg-gray-800 bg-white">
-        <svg class="absolute left-3 top-3 w-4 h-4 dark:text-gray-400 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-        </svg>
+  <div class="flex flex-col gap-3 xl:flex-row xl:items-center">
+    <form method="get" role="search" class="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
+      <div class="relative sm:col-span-2 lg:col-span-1">
+        <label for="f-busca" class="sr-only">Buscar produto</label>
+        <span class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-subtle">{% icon 'search' 'h-4 w-4' %}</span>
+        <input type="search" id="f-busca" name="busca" value="{{ busca }}" placeholder="Buscar produto, código..." class="form-input pl-10" enterkeyhint="search">
       </div>
-      <select name="categoria" class="form-input w-auto dark:bg-gray-800 bg-white">
-        <option value="">Todas as categorias</option>
-        {% for cat in categorias %}
-        <option value="{{ cat.pk }}" {% if categoria_filtro == cat.pk|stringformat:"s" %}selected{% endif %}>{{ cat.icone }} {{ cat.nome }}</option>
-        {% endfor %}
-      </select>
-      <select name="estoque" class="form-input w-auto dark:bg-gray-800 bg-white">
-        <option value="">Todos os estoques</option>
-        <option value="baixo" {% if estoque_filtro == 'baixo' %}selected{% endif %}>⚠️ Abaixo do mínimo</option>
-        <option value="zerado" {% if estoque_filtro == 'zerado' %}selected{% endif %}>🔴 Zerado</option>
-      </select>
-      <button type="submit" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">Filtrar</button>
-      {% if busca or categoria_filtro or estoque_filtro %}
-      <a href="{% url 'produtos:lista' %}" class="dark:bg-gray-700 bg-gray-200 dark:text-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm hover:opacity-80">✕ Limpar</a>
-      {% endif %}
+      <div>
+        <label for="f-categoria" class="sr-only">Categoria</label>
+        <select id="f-categoria" name="categoria" class="form-input lg:w-auto">
+          <option value="">Todas as categorias</option>
+          {% for cat in categorias %}
+          <option value="{{ cat.pk }}" {% if categoria_filtro == cat.pk|stringformat:"s" %}selected{% endif %}>{{ cat.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="f-estoque" class="sr-only">Nível de estoque</label>
+        <select id="f-estoque" name="estoque" class="form-input lg:w-auto">
+          <option value="">Todos os estoques</option>
+          <option value="baixo" {% if estoque_filtro == 'baixo' %}selected{% endif %}>Abaixo do mínimo</option>
+          <option value="zerado" {% if estoque_filtro == 'zerado' %}selected{% endif %}>Zerado</option>
+        </select>
+      </div>
+      <div class="flex gap-2">
+        <button type="submit" class="btn btn-primary flex-1">Filtrar</button>
+        {% if busca or categoria_filtro or estoque_filtro %}
+        <a href="{% url 'produtos:lista' %}" class="btn btn-secondary" aria-label="Limpar filtros">{% icon 'x' 'h-4 w-4' %}<span class="hidden sm:inline">Limpar</span></a>
+        {% endif %}
+      </div>
     </form>
-    <div class="flex gap-2 flex-shrink-0">
-      <a href="{% url 'produtos:categorias' %}" class="flex items-center gap-1.5 dark:bg-gray-700 bg-gray-100 dark:text-gray-300 text-gray-700 px-3 py-2.5 rounded-lg text-sm hover:opacity-80 transition-opacity">
-        🏷️ Categorias
-      </a>
+
+    <div class="flex gap-2 xl:shrink-0">
+      <a href="{% url 'produtos:categorias' %}" class="btn btn-secondary flex-1 xl:flex-none">{% icon 'tag' 'h-4 w-4' %}Categorias</a>
       {% if user.is_admin %}
-      <a href="{% url 'produtos:criar' %}" class="flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-        Novo Produto
-      </a>
+      <a href="{{ url_criar }}" class="btn btn-primary flex-1 xl:flex-none">{% icon 'plus' 'h-4 w-4' %}Novo Produto</a>
       {% endif %}
     </div>
   </div>
 
-  <p class="text-sm dark:text-gray-400 text-gray-500">{{ total }} produto{{ total|pluralize }} encontrado{{ total|pluralize }}</p>
+  <p class="text-sm text-muted" role="status">{{ total }} produto{{ total|pluralize }} encontrado{{ total|pluralize }}</p>
 
-  <!-- Tabela de produtos -->
-  <div class="dark:bg-gray-800 bg-white rounded-xl border dark:border-gray-700 border-gray-200 shadow-sm overflow-hidden">
-    <div class="overflow-x-auto">
-      <table class="w-full text-sm">
+  <!-- Tabela (vira cards no celular) -->
+  <div class="tcard">
+    <div class="tscroll">
+      <table class="rtable">
+        <caption class="sr-only">Lista de produtos</caption>
         <thead>
-          <tr class="dark:bg-gray-900/50 bg-gray-50">
-            <th class="text-left px-5 py-3 text-xs font-medium dark:text-gray-400 text-gray-500 uppercase tracking-wider">Produto</th>
-            <th class="text-left px-4 py-3 text-xs font-medium dark:text-gray-400 text-gray-500 uppercase tracking-wider hidden md:table-cell">Categoria</th>
-            <th class="text-right px-4 py-3 text-xs font-medium dark:text-gray-400 text-gray-500 uppercase tracking-wider">Estoque</th>
-            <th class="text-right px-4 py-3 text-xs font-medium dark:text-gray-400 text-gray-500 uppercase tracking-wider hidden sm:table-cell">Preço Venda</th>
-            <th class="text-center px-4 py-3 text-xs font-medium dark:text-gray-400 text-gray-500 uppercase tracking-wider">Status</th>
-            <th class="text-right px-5 py-3 text-xs font-medium dark:text-gray-400 text-gray-500 uppercase tracking-wider">Ações</th>
+          <tr>
+            <th scope="col">Produto</th>
+            <th scope="col" class="col-lg">Categoria</th>
+            <th scope="col" class="text-right">Estoque</th>
+            <th scope="col" class="text-right col-lg">Preço Venda</th>
+            <th scope="col" class="text-center">Status</th>
+            <th scope="col" class="text-right">Ações</th>
           </tr>
         </thead>
-        <tbody class="divide-y dark:divide-gray-700 divide-gray-100">
+        <tbody>
           {% for produto in produtos %}
-          <tr class="hover:dark:bg-gray-750 hover:bg-gray-50 transition-colors">
-            <td class="px-5 py-3">
+          <tr>
+            <td class="cell-main">
               <div class="flex items-center gap-3">
                 {% if produto.imagem %}
-                <img src="{{ produto.imagem.url }}" class="w-9 h-9 rounded-lg object-cover flex-shrink-0" alt="">
+                <img src="{{ produto.imagem.url }}" class="h-10 w-10 shrink-0 rounded-xl border border-line object-cover grayscale" width="40" height="40" loading="lazy" alt="">
                 {% else %}
-                <div class="w-9 h-9 rounded-lg dark:bg-gray-700 bg-gray-100 flex items-center justify-center flex-shrink-0 text-lg">
-                  {{ produto.categoria.icone|default:"📦" }}
-                </div>
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-line bg-surface2 text-muted grayscale">{% if produto.categoria.icone %}<span aria-hidden="true">{{ produto.categoria.icone }}</span>{% else %}{% icon 'cube' 'h-5 w-5' %}{% endif %}</span>
                 {% endif %}
-                <div>
-                  <p class="font-medium dark:text-white text-gray-900">{{ produto.nome }}</p>
-                  <p class="text-xs dark:text-gray-500 text-gray-400">{{ produto.codigo }}</p>
+                <div class="min-w-0">
+                  <a href="{% url 'produtos:detalhe' produto.pk %}" class="block truncate font-medium hover:underline">{{ produto.nome }}</a>
+                  <p class="text-xs text-subtle">{{ produto.codigo }}</p>
                 </div>
               </div>
             </td>
-            <td class="px-4 py-3 hidden md:table-cell dark:text-gray-300 text-gray-600 text-xs">
-              {{ produto.categoria.nome|default:"—" }}
+            <td data-label="Categoria" class="col-lg text-xs text-muted">{{ produto.categoria.nome|default:"—" }}</td>
+            <td data-label="Estoque" class="num">
+              <div class="flex flex-col items-end gap-1">
+                <p><span class="font-semibold">{{ produto.quantidade|qtd }}</span> <span class="text-xs text-subtle">{{ produto.get_unidade_display }}</span></p>
+                {% include 'components/status_badge.html' with produto=produto %}
+                {% if produto.esta_abaixo_minimo and not produto.esta_zerado %}<span class="text-xs text-subtle">mín: {{ produto.estoque_minimo|qtd }}</span>{% endif %}
+              </div>
             </td>
-            <td class="px-4 py-3 text-right">
-              <span class="font-medium {% if produto.esta_zerado %}text-red-400{% elif produto.esta_abaixo_minimo %}text-yellow-400{% else %}text-green-400{% endif %}">
-                {{ produto.quantidade|floatformat:2 }}
-              </span>
-              <span class="text-xs dark:text-gray-500 text-gray-400 ml-0.5">{{ produto.get_unidade_display }}</span>
-              {% if produto.esta_zerado %}
-              <span class="block text-xs text-red-400">ZERADO</span>
-              {% elif produto.esta_abaixo_minimo %}
-              <span class="block text-xs text-yellow-400">mín: {{ produto.estoque_minimo|floatformat:0 }}</span>
-              {% endif %}
-            </td>
-            <td class="px-4 py-3 text-right hidden sm:table-cell dark:text-gray-300 text-gray-600">
-              R$ {{ produto.preco_venda|floatformat:2 }}
-            </td>
-            <td class="px-4 py-3 text-center">
-              <span class="inline-block px-2 py-0.5 rounded-full text-xs
-                {% if produto.status == 'ativo' %}bg-green-900/50 text-green-400
-                {% elif produto.status == 'inativo' %}bg-gray-700 text-gray-400
-                {% else %}bg-red-900/50 text-red-400{% endif %}">
-                {{ produto.get_status_display }}
-              </span>
-            </td>
-            <td class="px-5 py-3 text-right">
-              <div class="flex items-center justify-end gap-1">
-                <a href="{% url 'movimentacoes:entrada' %}?produto={{ produto.pk }}"
-                  class="p-1.5 text-green-400 hover:bg-green-900/30 rounded-lg transition-colors" title="Registrar entrada">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                </a>
-                <a href="{% url 'movimentacoes:saida' %}?produto={{ produto.pk }}"
-                  class="p-1.5 text-red-400 hover:bg-red-900/30 rounded-lg transition-colors" title="Registrar saída">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
-                </a>
-                <a href="{% url 'produtos:detalhe' produto.pk %}"
-                  class="p-1.5 dark:text-gray-400 text-gray-500 hover:dark:bg-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Ver detalhes">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                </a>
+            <td data-label="Preço Venda" class="num col-lg text-muted">{{ produto.preco_venda|brl }}</td>
+            <td data-label="Status" class="text-center">{% include 'components/entity_status.html' with status=produto.status label=produto.get_status_display %}</td>
+            <td class="cell-actions text-right">
+              <div class="flex flex-wrap items-center justify-end gap-1">
+                <a href="{% url 'movimentacoes:entrada' %}?produto={{ produto.pk }}" class="btn btn-ghost btn-icon" title="Registrar entrada" aria-label="Registrar entrada de {{ produto.nome }}">{% icon 'inbox-in' 'h-4 w-4' %}</a>
+                <a href="{% url 'movimentacoes:saida' %}?produto={{ produto.pk }}" class="btn btn-ghost btn-icon" title="Registrar saída" aria-label="Registrar saída de {{ produto.nome }}">{% icon 'inbox-out' 'h-4 w-4' %}</a>
+                <a href="{% url 'produtos:detalhe' produto.pk %}" class="btn btn-ghost btn-icon" title="Ver detalhes" aria-label="Ver detalhes de {{ produto.nome }}">{% icon 'eye' 'h-4 w-4' %}</a>
                 {% if user.is_admin %}
-                <a href="{% url 'produtos:editar' produto.pk %}"
-                  class="p-1.5 text-blue-400 hover:bg-blue-900/30 rounded-lg transition-colors" title="Editar">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                </a>
-                <a href="{% url 'produtos:excluir' produto.pk %}"
-                  class="p-1.5 text-red-400 hover:bg-red-900/30 rounded-lg transition-colors" title="Excluir">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                </a>
+                <a href="{% url 'produtos:editar' produto.pk %}" class="btn btn-ghost btn-icon" title="Editar" aria-label="Editar {{ produto.nome }}">{% icon 'pencil' 'h-4 w-4' %}</a>
+                <a href="{% url 'produtos:excluir' produto.pk %}" class="btn btn-ghost btn-icon" title="Excluir" aria-label="Excluir {{ produto.nome }}">{% icon 'trash' 'h-4 w-4' %}</a>
                 {% endif %}
               </div>
             </td>
           </tr>
           {% empty %}
           <tr>
-            <td colspan="6" class="px-5 py-12 text-center dark:text-gray-400 text-gray-500">
-              <div class="flex flex-col items-center gap-3">
-                <span class="text-4xl">📦</span>
-                <p>Nenhum produto encontrado.</p>
-                {% if user.is_admin %}
-                <a href="{% url 'produtos:criar' %}" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">Cadastrar primeiro produto</a>
-                {% endif %}
-              </div>
+            <td colspan="6" class="cell-empty">
+              {% if user.is_admin %}
+              {% include 'components/empty_state.html' with icon='cube' title='Nenhum produto encontrado' text='Ajuste os filtros ou cadastre um novo produto.' action_url=url_criar action_label='Cadastrar primeiro produto' %}
+              {% else %}
+              {% include 'components/empty_state.html' with icon='cube' title='Nenhum produto encontrado' text='Ajuste os filtros de busca.' %}
+              {% endif %}
             </td>
           </tr>
           {% endfor %}

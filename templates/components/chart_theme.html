@@ -1,0 +1,42 @@
+{# Auxiliar de tema para Chart.js 4.4 (só tons de cinza). Incluir DEPOIS de carregar o Chart.js. #}
+<script>
+  (function () {
+    var root = document.documentElement;
+    function rgb(name) { return getComputedStyle(root).getPropertyValue(name).trim().split(/\s+/).join(','); }
+    window.ChartTheme = {
+      dark: function () { return root.classList.contains('dark'); },
+      // cor de um token do tema (--c-fg, --c-muted, ...) com alpha opcional
+      c: function (token, alpha) { return 'rgba(' + rgb(token) + ',' + (alpha == null ? 1 : alpha) + ')'; },
+      // n tons de cinza, do mais forte ao mais suave, legíveis sobre a superfície do tema atual
+      shades: function (n) {
+        var tones = this.dark() ? [250, 205, 160, 120, 88, 62] : [10, 64, 112, 160, 200, 228];
+        var out = [];
+        for (var i = 0; i < n; i++) { var t = tones[i % tones.length]; out.push('rgb(' + t + ',' + t + ',' + t + ')'); }
+        return out;
+      },
+      // aplica padrões globais (texto, linhas de grade, fonte)
+      defaults: function () {
+        Chart.defaults.font.family = "Inter, ui-sans-serif, system-ui, sans-serif";
+        Chart.defaults.color = this.c('--c-subtle');
+        Chart.defaults.borderColor = this.c('--c-line', 0.9);
+        // elementos: nenhuma cor padrão do Chart.js (azul/vermelho) pode aparecer, nem durante a animação inicial
+        var E = Chart.defaults.elements, fg = this.c('--c-fg'), tones = this.shades(3);
+        E.point.backgroundColor = fg; E.point.borderColor = fg;
+        E.line.borderColor = fg; E.line.backgroundColor = this.c('--c-fg', 0.08);
+        E.bar.backgroundColor = tones[1]; E.bar.borderColor = this.c('--c-strong');
+        E.arc.backgroundColor = tones[1]; E.arc.borderColor = this.c('--c-surface');
+        var tip = Chart.defaults.plugins.tooltip;
+        tip.backgroundColor = this.c('--c-inv'); tip.titleColor = this.c('--c-invfg'); tip.bodyColor = this.c('--c-invfg');
+        tip.cornerRadius = 10; tip.padding = 10; tip.displayColors = true; tip.boxPadding = 4;
+      },
+      // registra um callback que roda agora e a cada troca de tema
+      onTheme: function (fn) {
+        var self = this;
+        function run() { self.defaults(); fn(); }
+        run();
+        document.addEventListener('themechange', run);
+      }
+    };
+    window.ChartTheme.defaults();   // antes de qualquer new Chart()
+  })();
+</script>

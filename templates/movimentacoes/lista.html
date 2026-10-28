@@ -1,112 +1,98 @@
 {% extends 'base.html' %}
+{% load ui %}
 {% block title %}Movimentações{% endblock %}
 {% block page_title %}Movimentações de Estoque{% endblock %}
 
 {% block content %}
 <div class="space-y-5">
 
-  <!-- Cards de totais -->
-  <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
-    <div class="dark:bg-gray-800 bg-white rounded-xl p-4 border dark:border-gray-700 border-gray-200">
-      <div class="text-xs dark:text-gray-400 text-gray-500 mb-1">Entradas no período</div>
-      <div class="font-display font-bold text-2xl text-green-400">{{ total_entradas|floatformat:0 }}</div>
-      <div class="text-xs dark:text-gray-500 text-gray-400">unidades</div>
+  <!-- Totais do período -->
+  <section class="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4" aria-label="Totais do período">
+    {% include 'components/stat_card.html' with label='Entradas' value=total_entradas|qtd:0 hint='unidades no período' icon='inbox-in' %}
+    {% include 'components/stat_card.html' with label='Saídas' value=total_saidas|qtd:0 hint='unidades no período' icon='inbox-out' %}
+    <div class="col-span-2 sm:col-span-1">
+      {% include 'components/stat_card.html' with label='Registros' value=total_registros hint='total de movimentações' icon='switch' %}
     </div>
-    <div class="dark:bg-gray-800 bg-white rounded-xl p-4 border dark:border-gray-700 border-gray-200">
-      <div class="text-xs dark:text-gray-400 text-gray-500 mb-1">Saídas no período</div>
-      <div class="font-display font-bold text-2xl text-red-400">{{ total_saidas|floatformat:0 }}</div>
-      <div class="text-xs dark:text-gray-500 text-gray-400">unidades</div>
-    </div>
-    <div class="dark:bg-gray-800 bg-white rounded-xl p-4 border dark:border-gray-700 border-gray-200">
-      <div class="text-xs dark:text-gray-400 text-gray-500 mb-1">Total de registros</div>
-      <div class="font-display font-bold text-2xl dark:text-white text-gray-900">{{ total_registros }}</div>
-    </div>
-  </div>
+  </section>
 
   <!-- Filtros e ações -->
-  <div class="flex flex-col sm:flex-row gap-3">
-    <form method="get" class="flex gap-2 flex-1 flex-wrap">
-      <div class="relative flex-1 min-w-40">
-        <input type="text" name="busca" value="{{ busca }}" placeholder="Buscar produto, documento..."
-          class="form-input pl-10 dark:bg-gray-800 bg-white">
-        <svg class="absolute left-3 top-3 w-4 h-4 dark:text-gray-400 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+  <div class="flex flex-col gap-3 xl:flex-row xl:items-center">
+    <form method="get" role="search" class="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-3 lg:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
+      <div class="relative sm:col-span-3 lg:col-span-1">
+        <label for="f-busca" class="sr-only">Buscar movimentação</label>
+        <span class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-subtle">{% icon 'search' 'h-4 w-4' %}</span>
+        <input type="search" id="f-busca" name="busca" value="{{ busca }}" placeholder="Buscar produto, documento..." class="form-input pl-10" enterkeyhint="search">
       </div>
-      <select name="tipo" class="form-input w-auto dark:bg-gray-800 bg-white">
-        <option value="">Todos os tipos</option>
-        <option value="entrada" {% if tipo_filtro == 'entrada' %}selected{% endif %}>Entrada</option>
-        <option value="saida" {% if tipo_filtro == 'saida' %}selected{% endif %}>Saída</option>
-        <option value="ajuste" {% if tipo_filtro == 'ajuste' %}selected{% endif %}>Ajuste</option>
-      </select>
-      <select name="periodo" class="form-input w-auto dark:bg-gray-800 bg-white">
-        <option value="7" {% if periodo == '7' %}selected{% endif %}>7 dias</option>
-        <option value="30" {% if periodo == '30' %}selected{% endif %}>30 dias</option>
-        <option value="60" {% if periodo == '60' %}selected{% endif %}>60 dias</option>
-        <option value="90" {% if periodo == '90' %}selected{% endif %}>90 dias</option>
-      </select>
-      <button type="submit" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium">Filtrar</button>
+      <div>
+        <label for="f-tipo" class="sr-only">Tipo</label>
+        <select id="f-tipo" name="tipo" class="form-input lg:w-auto">
+          <option value="">Todos os tipos</option>
+          <option value="entrada" {% if tipo_filtro == 'entrada' %}selected{% endif %}>Entrada</option>
+          <option value="saida" {% if tipo_filtro == 'saida' %}selected{% endif %}>Saída</option>
+          <option value="ajuste" {% if tipo_filtro == 'ajuste' %}selected{% endif %}>Ajuste</option>
+        </select>
+      </div>
+      <div>
+        <label for="f-periodo" class="sr-only">Período</label>
+        <select id="f-periodo" name="periodo" class="form-input lg:w-auto">
+          <option value="7" {% if periodo == '7' %}selected{% endif %}>7 dias</option>
+          <option value="30" {% if periodo == '30' %}selected{% endif %}>30 dias</option>
+          <option value="60" {% if periodo == '60' %}selected{% endif %}>60 dias</option>
+          <option value="90" {% if periodo == '90' %}selected{% endif %}>90 dias</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary">Filtrar</button>
     </form>
-    <div class="flex gap-2 flex-shrink-0">
-      <a href="{% url 'movimentacoes:entrada' %}" class="flex items-center gap-1.5 bg-green-600 hover:bg-green-500 text-white px-3 py-2.5 rounded-lg text-sm font-medium transition-colors">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-        Entrada
-      </a>
-      <a href="{% url 'movimentacoes:saida' %}" class="flex items-center gap-1.5 bg-red-600 hover:bg-red-500 text-white px-3 py-2.5 rounded-lg text-sm font-medium transition-colors">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
-        Saída
-      </a>
+
+    <div class="grid grid-cols-2 gap-2 sm:flex xl:shrink-0">
+      <a href="{% url 'movimentacoes:entrada' %}" class="btn btn-primary">{% icon 'inbox-in' 'h-4 w-4' %}Entrada</a>
+      <a href="{% url 'movimentacoes:saida' %}" class="btn btn-secondary">{% icon 'inbox-out' 'h-4 w-4' %}Saída</a>
       {% if user.is_admin %}
-      <a href="{% url 'movimentacoes:ajuste' %}" class="flex items-center gap-1.5 dark:bg-gray-700 bg-gray-100 dark:text-gray-300 text-gray-700 px-3 py-2.5 rounded-lg text-sm transition-colors hover:opacity-80">
-        Ajuste
-      </a>
+      <a href="{% url 'movimentacoes:ajuste' %}" class="btn btn-secondary col-span-2 sm:col-span-1">{% icon 'adjust' 'h-4 w-4' %}Ajuste</a>
       {% endif %}
     </div>
   </div>
 
-  <!-- Tabela -->
-  <div class="dark:bg-gray-800 bg-white rounded-xl border dark:border-gray-700 border-gray-200 shadow-sm overflow-hidden">
-    <div class="overflow-x-auto">
-      <table class="w-full text-sm">
+  <!-- Tabela (cards no celular) -->
+  <div class="tcard">
+    <div class="tscroll">
+      <table class="rtable">
+        <caption class="sr-only">Movimentações de estoque no período</caption>
         <thead>
-          <tr class="dark:bg-gray-900/50 bg-gray-50">
-            <th class="text-left px-5 py-3 text-xs font-medium dark:text-gray-400 text-gray-500 uppercase tracking-wider">Produto</th>
-            <th class="text-left px-4 py-3 text-xs font-medium dark:text-gray-400 text-gray-500 uppercase tracking-wider hidden sm:table-cell">Tipo</th>
-            <th class="text-right px-4 py-3 text-xs font-medium dark:text-gray-400 text-gray-500 uppercase tracking-wider">Qtd</th>
-            <th class="text-right px-4 py-3 text-xs font-medium dark:text-gray-400 text-gray-500 uppercase tracking-wider hidden md:table-cell">Valor Total</th>
-            <th class="text-left px-4 py-3 text-xs font-medium dark:text-gray-400 text-gray-500 uppercase tracking-wider hidden lg:table-cell">Documento</th>
-            <th class="text-left px-4 py-3 text-xs font-medium dark:text-gray-400 text-gray-500 uppercase tracking-wider hidden xl:table-cell">Usuário</th>
-            <th class="text-left px-5 py-3 text-xs font-medium dark:text-gray-400 text-gray-500 uppercase tracking-wider hidden lg:table-cell">Data</th>
+          <tr>
+            <th scope="col">Produto</th>
+            <th scope="col">Tipo</th>
+            <th scope="col" class="text-right">Qtd</th>
+            <th scope="col" class="text-right">Valor Total</th>
+            <th scope="col" class="col-xl">Documento</th>
+            <th scope="col" class="col-xl">Usuário</th>
+            <th scope="col">Data</th>
           </tr>
         </thead>
-        <tbody class="divide-y dark:divide-gray-700 divide-gray-100">
+        <tbody>
           {% for mov in movimentacoes %}
-          <tr class="hover:dark:bg-gray-750 hover:bg-gray-50 transition-colors">
-            <td class="px-5 py-3">
-              <a href="{% url 'produtos:detalhe' mov.produto.pk %}" class="hover:text-green-400 transition-colors">
-                <p class="font-medium dark:text-white text-gray-900">{{ mov.produto.nome }}</p>
-                <p class="text-xs dark:text-gray-500 text-gray-400">{{ mov.produto.codigo }}</p>
+          <tr>
+            <td class="cell-main">
+              <a href="{% url 'produtos:detalhe' mov.produto.pk %}" class="block hover:underline">
+                <span class="block font-medium">{{ mov.produto.nome }}</span>
+                <span class="block text-xs text-subtle">{{ mov.produto.codigo }}</span>
               </a>
             </td>
-            <td class="px-4 py-3 hidden sm:table-cell">
-              <span class="px-2.5 py-0.5 rounded-full text-xs font-medium
-                {% if mov.tipo == 'entrada' %}bg-green-900/50 text-green-400
-                {% elif mov.tipo == 'saida' %}bg-red-900/50 text-red-400
-                {% elif mov.tipo == 'ajuste' %}bg-blue-900/50 text-blue-400
-                {% else %}bg-gray-700 text-gray-300{% endif %}">
-                {{ mov.get_tipo_display }}
-              </span>
-              <span class="block text-xs dark:text-gray-500 text-gray-400 mt-0.5">{{ mov.motivo }}</span>
+            <td data-label="Tipo">
+              <div class="flex flex-col items-end gap-1 md:items-start">
+                {% include 'components/mov_badge.html' with tipo=mov.tipo label=mov.get_tipo_display %}
+                {% if mov.motivo %}<span class="text-xs text-subtle">{{ mov.motivo }}</span>{% endif %}
+              </div>
             </td>
-            <td class="px-4 py-3 text-right font-medium dark:text-white text-gray-900">{{ mov.quantidade|floatformat:2 }}</td>
-            <td class="px-4 py-3 text-right dark:text-gray-300 text-gray-600 hidden md:table-cell">
-              {% if mov.valor_total %}R$ {{ mov.valor_total|floatformat:2 }}{% else %}—{% endif %}
-            </td>
-            <td class="px-4 py-3 dark:text-gray-400 text-gray-500 text-xs hidden lg:table-cell">{{ mov.numero_documento|default:"—" }}</td>
-            <td class="px-4 py-3 dark:text-gray-400 text-gray-500 text-xs hidden xl:table-cell">{{ mov.usuario|default:"—" }}</td>
-            <td class="px-5 py-3 dark:text-gray-400 text-gray-500 text-xs hidden lg:table-cell">{{ mov.criado_em|date:"d/m/Y H:i" }}</td>
+            <td data-label="Qtd" class="num font-medium">{% if mov.tipo == 'entrada' %}+{% elif mov.tipo == 'saida' %}−{% endif %}{{ mov.quantidade|qtd }}</td>
+            <td data-label="Valor Total" class="num text-muted">{% if mov.valor_total %}{{ mov.valor_total|brl }}{% else %}—{% endif %}</td>
+            <td data-label="Documento" class="col-xl text-xs text-muted">{{ mov.numero_documento|default:"—" }}</td>
+            <td data-label="Usuário" class="col-xl text-xs text-muted">{{ mov.usuario|default:"—" }}</td>
+            <td data-label="Data" class="text-xs text-muted">{{ mov.criado_em|date:"d/m/Y H:i" }}</td>
           </tr>
           {% empty %}
           <tr>
-            <td colspan="7" class="px-5 py-10 text-center dark:text-gray-400 text-gray-500">Nenhuma movimentação encontrada no período.</td>
+            <td colspan="7" class="cell-empty">{% include 'components/empty_state.html' with icon='switch' title='Nenhuma movimentação encontrada' text='Não há registros para os filtros e o período escolhidos.' %}</td>
           </tr>
           {% endfor %}
         </tbody>

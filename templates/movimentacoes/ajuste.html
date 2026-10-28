@@ -1,24 +1,27 @@
 {% extends 'base.html' %}
+{% load ui %}
 {% block title %}Ajuste de Inventário{% endblock %}
 {% block page_title %}Ajuste de Inventário{% endblock %}
 {% block content %}
-<div class="max-w-xl mx-auto">
-  <div class="dark:bg-gray-800 bg-white rounded-xl border dark:border-blue-700 border-blue-200 shadow-sm overflow-hidden">
-    <div class="px-6 py-4 bg-blue-600/10 border-b dark:border-blue-700/50 border-blue-200 flex items-center gap-3">
-      <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center"><svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg></div>
-      <div><h2 class="font-display font-semibold dark:text-white text-gray-900">Ajuste de Inventário</h2><p class="text-xs dark:text-gray-400 text-gray-500">Corrige a quantidade real do produto</p></div>
+{% url 'movimentacoes:lista' as url_lista %}
+<div class="mx-auto max-w-xl">
+  <div class="card overflow-hidden">
+    {% include 'components/card_header.html' with title='Ajuste de Inventário' description='Corrige a quantidade real do produto' icon='adjust' %}
+
+    <div class="flex items-start gap-3 border-b border-dashed border-strong bg-mid/40 px-5 py-3.5 text-sm sm:px-7" role="note">
+      {% icon 'warning' 'mt-0.5 h-5 w-5 shrink-0' %}
+      <p><strong class="font-semibold">Atenção:</strong> o ajuste substitui a quantidade atual pelo valor informado. Use apenas após contagem física.</p>
     </div>
-    <div class="px-6 py-3 bg-yellow-900/20 border-b dark:border-yellow-800 border-yellow-200">
-      <p class="text-xs text-yellow-400">⚠️ <strong>Atenção:</strong> O ajuste substitui a quantidade atual pelo valor informado. Use apenas após contagem física.</p>
-    </div>
-    <form method="post" class="p-6 space-y-4">
+
+    <form method="post" class="space-y-5 p-5 sm:p-7">
       {% csrf_token %}
-      <div><label class="block text-sm font-medium dark:text-gray-300 text-gray-700 mb-1.5">Produto <span class="text-red-400">*</span></label>{{ form.produto }}</div>
-      <div><label class="block text-sm font-medium dark:text-gray-300 text-gray-700 mb-1.5">Nova Quantidade (real) <span class="text-red-400">*</span></label>{{ form.quantidade }}</div>
-      <div><label class="block text-sm font-medium dark:text-gray-300 text-gray-700 mb-1.5">Motivo do Ajuste</label>{{ form.observacoes }}</div>
-      <div class="flex gap-3 pt-2">
-        <a href="{% url 'movimentacoes:lista' %}" class="px-5 py-2.5 dark:bg-gray-700 bg-gray-100 dark:text-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:opacity-80">Cancelar</a>
-        <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-lg text-sm font-medium font-display transition-colors">🔧 Aplicar Ajuste</button>
+      {% include 'components/form_errors.html' with form=form %}
+      {% include 'components/form_field.html' with field=form.produto %}
+      {% include 'components/form_field.html' with field=form.quantidade %}
+      {% include 'components/form_field.html' with field=form.observacoes %}
+      <div class="flex flex-col-reverse gap-3 border-t border-line pt-5 sm:flex-row">
+        <a href="{{ url_lista }}" class="btn btn-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary sm:flex-1">{% icon 'adjust' 'h-4 w-4' %}Aplicar Ajuste</button>
       </div>
     </form>
   </div>

@@ -1,0 +1,9 @@
+{% load ui %}{# Estado vazio. Parametros: icon, title, text, action_url (opcional), action_label (opcional). #}
+<div class="flex flex-col items-center gap-3 px-6 py-12 text-center">
+  <span class="flex h-14 w-14 items-center justify-center rounded-2xl border border-dashed border-strong text-subtle">{% icon icon|default:'cube' 'h-7 w-7' %}</span>
+  <div>
+    <p class="text-sm font-semibold">{{ title }}</p>
+    {% if text %}<p class="mt-1 text-sm text-muted">{{ text }}</p>{% endif %}
+  </div>
+  {% if action_url %}<a href="{{ action_url }}" class="btn btn-primary mt-1">{% icon 'plus' 'h-4 w-4' %}{{ action_label }}</a>{% endif %}
+</div>

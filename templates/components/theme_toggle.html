@@ -1,0 +1,6 @@
+{% load ui %}{# Botão de alternância de tema. Ícone via classes dark: (sem JS). #}
+<button type="button" onclick="toggleTheme()" data-theme-toggle aria-pressed="false"
+  class="btn btn-ghost btn-icon rounded-xl {{ extra_class }}" aria-label="Alternar entre tema claro e escuro" title="Alternar tema">
+  <span class="dark:hidden">{% icon 'moon' 'h-5 w-5' %}</span>
+  <span class="hidden dark:inline">{% icon 'sun' 'h-5 w-5' %}</span>
+</button>

@@ -1,0 +1,24 @@
+{% load ui %}{# Mensagens do django.contrib.messages — diferenciadas por ícone, rótulo e estilo (sem cor). #}
+{% if messages %}
+<div id="messages-container" class="pointer-events-none fixed inset-x-3 top-[4.5rem] z-[60] flex flex-col items-end gap-2 sm:inset-x-auto sm:right-4 sm:w-full sm:max-w-sm" aria-live="polite">
+  {% for message in messages %}
+  <div class="toast alert pointer-events-auto w-full {% if message.level_tag == 'success' %}alert-success{% elif message.level_tag == 'error' %}alert-error{% elif message.level_tag == 'warning' %}alert-warning{% else %}alert-info{% endif %}"
+       role="{% if message.level_tag == 'error' or message.level_tag == 'warning' %}alert{% else %}status{% endif %}">
+    <span class="mt-0.5 shrink-0">
+      {% if message.level_tag == 'success' %}{% icon 'check-circle' 'h-5 w-5' %}
+      {% elif message.level_tag == 'error' %}{% icon 'x-circle' 'h-5 w-5' %}
+      {% elif message.level_tag == 'warning' %}{% icon 'warning' 'h-5 w-5' %}
+      {% else %}{% icon 'info' 'h-5 w-5' %}{% endif %}
+    </span>
+    <p class="min-w-0 flex-1 leading-snug">
+      <strong class="font-semibold">{% if message.level_tag == 'success' %}Sucesso:{% elif message.level_tag == 'error' %}Erro:{% elif message.level_tag == 'warning' %}Atenção:{% else %}Aviso:{% endif %}</strong>
+      {{ message }}
+    </p>
+    <button type="button" data-dismiss-toast aria-label="Fechar mensagem"
+      class="-m-2 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl opacity-70 transition hover:opacity-100">
+      {% icon 'x' 'h-4 w-4' %}
+    </button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}

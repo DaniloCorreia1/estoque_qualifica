@@ -1,0 +1,9 @@
+{% load ui %}{# Cabecalho de card/formulario. Parametros: title, description (opc.), back_url (opc.), icon (opc.). #}
+<div class="flex items-center gap-3 border-b border-line px-5 py-4 sm:px-6">
+  {% if back_url %}<a href="{{ back_url }}" class="btn btn-ghost btn-icon -ml-2" aria-label="Voltar">{% icon 'arrow-left' 'h-5 w-5' %}</a>
+  {% elif icon %}<span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-line bg-surface2">{% icon icon 'h-5 w-5' %}</span>{% endif %}
+  <div class="min-w-0">
+    <h2 class="truncate text-base font-semibold tracking-tight">{{ title }}</h2>
+    {% if description %}<p class="truncate text-xs text-subtle">{{ description }}</p>{% endif %}
+  </div>
+</div>

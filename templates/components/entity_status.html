@@ -1,0 +1,4 @@
+{% load ui %}{# Situacao de cadastro. Parametros: status (ativo|inativo|bloqueado), label. ativo = contorno + ponto cheio; inativo = tracejado + ponto vazio; bloqueado = solido invertido + cadeado. #}<span class="badge en-{{ status }}">
+  {% if status == 'descontinuado' %}{% icon 'ban' 'h-3.5 w-3.5' %}{% elif status == 'bloqueado' %}{% icon 'lock' 'h-3.5 w-3.5' %}{% elif status == 'inativo' %}<span class="h-2 w-2 rounded-full border border-current" aria-hidden="true"></span>{% else %}<span class="h-2 w-2 rounded-full bg-current" aria-hidden="true"></span>{% endif %}
+  {{ label }}
+</span>

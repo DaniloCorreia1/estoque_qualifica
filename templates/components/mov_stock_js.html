@@ -1,0 +1,27 @@
+{% load l10n ui %}{# Mostra o estoque atual e o nivel (status_estoque) do produto selecionado. Parametro: info_label. #}
+<script>
+  (function () {
+    var select = document.querySelector('[name="produto"]');
+    var info = document.getElementById('estoque-info');
+    if (!select || !info) return;
+    var rotulos = { normal: 'Normal', alerta: 'Atenção', critico: 'Crítico', zerado: 'Zerado' };
+    var produtos = {};
+    {% for p in form.produto.field.queryset %}
+    produtos[{{ p.pk|unlocalize }}] = { qtd: {{ p.quantidade|unlocalize }}, un: "{{ p.get_unidade_display|escapejs }}", st: "{{ p|nivel_estoque|escapejs }}" };
+    {% endfor %}
+    function atualizar() {
+      info.textContent = '';
+      var p = produtos[select.value];
+      if (!p) return;
+      var txt = document.createElement('span');
+      txt.textContent = '{{ info_label|escapejs }}: ' + p.qtd.toLocaleString('pt-BR') + ' ' + p.un;
+      var b = document.createElement('span');
+      b.className = 'badge st-' + p.st;
+      b.textContent = rotulos[p.st] || '';
+      info.appendChild(txt);
+      info.appendChild(b);
+    }
+    select.addEventListener('change', atualizar);
+    atualizar();
+  })();
+</script>

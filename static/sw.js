@@ -4,7 +4,7 @@
  * para ter escopo sobre todas as páginas do sistema.
  */
 
-const CACHE_NAME = 'estoque-qualifica-v2.0';
+const CACHE_NAME = 'estoque-qualifica-v3.0';
 
 // Arquivos essenciais que ficam em cache para funcionar offline
 const ARQUIVOS_CACHE = [
@@ -16,7 +16,7 @@ const ARQUIVOS_CACHE = [
 
 // INSTALA e armazena cache básico
 self.addEventListener('install', function(event) {
-  console.log('[SW] Instalando v2.0...');
+  console.log('[SW] Instalando v3.0...');
   event.waitUntil(
     caches.open(CACHE_NAME).then(function(cache) {
       // Tenta cachear cada arquivo individualmente — não falha se algum não carregar
@@ -30,7 +30,7 @@ self.addEventListener('install', function(event) {
 
 // ATIVA e remove caches antigos
 self.addEventListener('activate', function(event) {
-  console.log('[SW] Ativado v2.0');
+  console.log('[SW] Ativado v3.0');
   event.waitUntil(
     caches.keys().then(function(nomes) {
       return Promise.all(
@@ -83,24 +83,24 @@ self.addEventListener('fetch', function(event) {
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      background: #111827; color: #f9fafb;
+      background: #000000; color: #fafafa;
       font-family: sans-serif;
       display: flex; align-items: center; justify-content: center;
       min-height: 100vh; text-align: center; padding: 2rem;
       flex-direction: column; gap: 1.5rem;
     }
-    .icon { font-size: 4rem; }
-    h1 { font-size: 1.5rem; color: #22c55e; }
-    p { color: #9ca3af; font-size: 0.9rem; line-height: 1.6; max-width: 300px; }
+    .icon { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.04em; border: 1px solid #404040; border-radius: 1rem; padding: 1rem 1.5rem; }
+    h1 { font-size: 1.5rem; color: #ffffff; }
+    p { color: #a3a3a3; font-size: 0.9rem; line-height: 1.6; max-width: 300px; }
     button {
-      background: #22c55e; color: white; border: none;
+      background: #fafafa; color: #0a0a0a; border: none;
       padding: 0.75rem 2rem; border-radius: 0.5rem;
       font-size: 1rem; cursor: pointer; margin-top: 0.5rem;
     }
   </style>
 </head>
 <body>
-  <div class="icon">📦</div>
+  <div class="icon">EQ</div>
   <h1>Você está offline</h1>
   <p>Não foi possível conectar ao Estoque Qualifica. Verifique sua internet e tente novamente.</p>
   <button onclick="location.reload()">Tentar novamente</button>

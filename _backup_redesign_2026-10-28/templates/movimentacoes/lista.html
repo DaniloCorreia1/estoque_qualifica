@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% block title %}Movimentações{% endblock %}
+{% block page_title %}Movimentações de Estoque{% endblock %}
+
+{% block content %}
+<div class="space-y-5">
+
+  <!-- Cards de totais -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+    <div class="dark:bg-gray-800 bg-white rounded-xl p-4 border dark:border-gray-700 border-gray-200">
+      <div class="text-xs dark:text-gray-400 text-gray-500 mb-1">Entradas no período</div>
+      <div class="font-display font-bold text-2xl text-green-400">{{ total_entradas|floatformat:0 }}</div>
+      <div class="text-xs dark:text-gray-500 text-gray-400">unidades</div>
+    </div>
+    <div class="dark:bg-gray-800 bg-white rounded-xl p-4 border dark:border-gray-700 border-gray-200">
+      <div class="text-xs dark:text-gray-400 text-gray-500 mb-1">Saídas no período</div>
+      <div class="font-display font-bold text-2xl text-red-400">{{ total_saidas|floatformat:0 }}</div>
+      <div class="text-xs dark:text-gray-500 text-gray-400">unidades</div>
+    </div>
+    <div class="dark:bg-gray-800 bg-white rounded-xl p-4 border dark:border-gray-700 border-gray-200">
+      <div class="text-xs dark:text-gray-400 text-gray-500 mb-1">Total de registros</div>
+      <div class="font-display font-bold text-2xl dark:text-white text-gray-900">{{ total_registros }}</div>
+    </div>
+  </div>
+
+  <!-- Filtros e ações -->
+  <div class="flex flex-col sm:flex-row gap-3">
+    <form method="get" class="flex gap-2 flex-1 flex-wrap">
+      <div class="relative flex-1 min-w-40">
+        <input type="text" name="busca" value="{{ busca }}" placeholder="Buscar produto, documento..."
+          class="form-input pl-10 dark:bg-gray-800 bg-white">
+        <svg class="absolute left-3 top-3 w-4 h-4 dark:text-gray-400 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      </div>
+      <select name="tipo" class="form-input w-auto dark:bg-gray-800 bg-white">
+        <option value="">Todos os tipos</option>
+        <option value="entrada" {% if tipo_filtro == 'entrada' %}selected{% endif %}>Entrada</option>
+        <option value="saida" {% if tipo_filtro == 'saida' %}selected{% endif %}>Saída</option>
+        <option value="ajuste" {% if tipo_filtro == 'ajuste' %}selected{% endif %}>Ajuste</option>
+      </select>
+      <select name="periodo" class="form-input w-auto dark:bg-gray-800 bg-white">
+        <option value="7" {% if periodo == '7' %}selected{% endif %}>7 dias</option>
+        <option value="30" {% if periodo == '30' %}selected{% endif %}>30 dias</option>
+        <option value="60" {% if periodo == '60' %}selected{% endif %}>60 dias</option>
+        <option value="90" {% if periodo == '90' %}selected{% endif %}>90 dias</option>
+      </select>
+      <button type="submit" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium">Filtrar</button>
+    </form>
+    <div class="flex gap-2 flex-shrink-0">
+      <a href="{% url 'movimentacoes:entrada' %}" class="flex items-center gap-1.5 bg-green-600 hover:bg-green-500 text-white px-3 py-2.5 rounded-lg text-sm font-medium transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Entrada
+      </a>
+      <a href="{% url 'movimentacoes:saida' %}" class="flex items-center gap-1.5 bg-red-600 hover:bg-red-500 text-white px-3 py-2.5 rounded-lg text-sm font-medium transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
+        Saída
+      </a>
+      {% if user.is_admin %}
+      <a href="{% url 'movimentacoes:ajuste' %}" class="flex items-center gap-1.5 dark:bg-gray-700 bg-gray-100 dark:text-gray-300 text-gray-700 px-3 py-2.5 rounded-lg text-sm transition-colors hover:opacity-80">
+        Ajuste
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Tabela -->
+  <div class="dark:bg-gray-800 bg-white rounded-xl border dark:border-gray-700 border-gray-200 shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="dark:bg-gray-900/50 bg-gray-50">
+            <th class="text-left px-5 py-3 text-xs font-medium dark:text-gray-400 text-gray-500 uppercase tracking-wider">Produto</th>
+            <th class="text-left px-4 py-3 text-xs font-medium dark:text-gray-400 text-gray-500 uppercase tracking-wider hidden sm:table-cell">Tipo</th>
+            <th class="text-right px-4 py-3 text-xs font-medium dark:text-gray-400 text-gray-500 uppercase tracking-wider">Qtd</th>
+            <th class="text-right px-4 py-3 text-xs font-medium dark:text-gray-400 text-gray-500 uppercase tracking-wider hidden md:table-cell">Valor Total</th>
+            <th class="text-left px-4 py-3 text-xs font-medium dark:text-gray-400 text-gray-500 uppercase tracking-wider hidden lg:table-cell">Documento</th>
+            <th class="text-left px-4 py-3 text-xs font-medium dark:text-gray-400 text-gray-500 uppercase tracking-wider hidden xl:table-cell">Usuário</th>
+            <th class="text-left px-5 py-3 text-xs font-medium dark:text-gray-400 text-gray-500 uppercase tracking-wider hidden lg:table-cell">Data</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y dark:divide-gray-700 divide-gray-100">
+          {% for mov in movimentacoes %}
+          <tr class="hover:dark:bg-gray-750 hover:bg-gray-50 transition-colors">
+            <td class="px-5 py-3">
+              <a href="{% url 'produtos:detalhe' mov.produto.pk %}" class="hover:text-green-400 transition-colors">
+                <p class="font-medium dark:text-white text-gray-900">{{ mov.produto.nome }}</p>
+                <p class="text-xs dark:text-gray-500 text-gray-400">{{ mov.produto.codigo }}</p>
+              </a>
+            </td>
+            <td class="px-4 py-3 hidden sm:table-cell">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-medium
+                {% if mov.tipo == 'entrada' %}bg-green-900/50 text-green-400
+                {% elif mov.tipo == 'saida' %}bg-red-900/50 text-red-400
+                {% elif mov.tipo == 'ajuste' %}bg-blue-900/50 text-blue-400
+                {% else %}bg-gray-700 text-gray-300{% endif %}">
+                {{ mov.get_tipo_display }}
+              </span>
+              <span class="block text-xs dark:text-gray-500 text-gray-400 mt-0.5">{{ mov.motivo }}</span>
+            </td>
+            <td class="px-4 py-3 text-right font-medium dark:text-white text-gray-900">{{ mov.quantidade|floatformat:2 }}</td>
+            <td class="px-4 py-3 text-right dark:text-gray-300 text-gray-600 hidden md:table-cell">
+              {% if mov.valor_total %}R$ {{ mov.valor_total|floatformat:2 }}{% else %}—{% endif %}
+            </td>
+            <td class="px-4 py-3 dark:text-gray-400 text-gray-500 text-xs hidden lg:table-cell">{{ mov.numero_documento|default:"—" }}</td>
+            <td class="px-4 py-3 dark:text-gray-400 text-gray-500 text-xs hidden xl:table-cell">{{ mov.usuario|default:"—" }}</td>
+            <td class="px-5 py-3 dark:text-gray-400 text-gray-500 text-xs hidden lg:table-cell">{{ mov.criado_em|date:"d/m/Y H:i" }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="px-5 py-10 text-center dark:text-gray-400 text-gray-500">Nenhuma movimentação encontrada no período.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

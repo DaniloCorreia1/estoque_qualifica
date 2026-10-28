@@ -1,0 +1,5 @@
+{% load ui %}{# Rodape de formulario. Parametros: cancel_url, submit_label. Botao com loading automatico (script global do base). #}
+<div class="flex flex-col-reverse gap-3 border-t border-line pt-5 sm:flex-row sm:items-center sm:justify-end">
+  <a href="{{ cancel_url }}" class="btn btn-secondary">Cancelar</a>
+  <button type="submit" class="btn btn-primary sm:min-w-[10rem]">{% icon 'check' 'h-4 w-4' %}{{ submit_label }}</button>
+</div>

@@ -1,143 +1,80 @@
 {% extends 'base.html' %}
+{% load ui %}
 {% block title %}Fornecedores — Estoque Qualifica{% endblock %}
 {% block page_title %}Fornecedores{% endblock %}
 
 {% block content %}
+{% url 'fornecedores:criar' as url_criar %}
 <div class="space-y-5">
 
-  <!-- Barra superior: busca + botão novo -->
-  <div class="flex flex-col sm:flex-row gap-3">
-    <form method="get" class="flex gap-2 flex-1">
-      <div class="relative flex-1">
-        <input type="text" name="busca" value="{{ busca }}"
-          placeholder="Buscar por nome, CNPJ, cidade..."
-          class="form-input pl-10 dark:bg-gray-800 bg-white">
-        <svg class="absolute left-3 top-3 w-4 h-4 dark:text-gray-400 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-        </svg>
+  <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
+    <form method="get" role="search" class="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+      <div class="relative">
+        <label for="f-busca" class="sr-only">Buscar fornecedor</label>
+        <span class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-subtle">{% icon 'search' 'h-4 w-4' %}</span>
+        <input type="search" id="f-busca" name="busca" value="{{ busca }}" placeholder="Buscar por nome, CNPJ, cidade..." class="form-input pl-10" enterkeyhint="search">
       </div>
-      <select name="status" class="form-input w-auto dark:bg-gray-800 bg-white">
-        <option value="">Todos os status</option>
-        <option value="ativo" {% if status_filtro == 'ativo' %}selected{% endif %}>Ativo</option>
-        <option value="inativo" {% if status_filtro == 'inativo' %}selected{% endif %}>Inativo</option>
-        <option value="bloqueado" {% if status_filtro == 'bloqueado' %}selected{% endif %}>Bloqueado</option>
-      </select>
-      <button type="submit" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium">
-        Buscar
-      </button>
-      {% if busca or status_filtro %}
-      <a href="{% url 'fornecedores:lista' %}" class="dark:bg-gray-700 bg-gray-200 dark:text-gray-300 text-gray-700 px-3 py-2 rounded-lg hover:opacity-80 transition-opacity text-sm">
-        ✕
-      </a>
-      {% endif %}
+      <div>
+        <label for="f-status" class="sr-only">Status</label>
+        <select id="f-status" name="status" class="form-input sm:w-auto">
+          <option value="">Todos os status</option>
+          <option value="ativo" {% if status_filtro == 'ativo' %}selected{% endif %}>Ativo</option>
+          <option value="inativo" {% if status_filtro == 'inativo' %}selected{% endif %}>Inativo</option>
+          <option value="bloqueado" {% if status_filtro == 'bloqueado' %}selected{% endif %}>Bloqueado</option>
+        </select>
+      </div>
+      <div class="flex gap-2">
+        <button type="submit" class="btn btn-primary flex-1">Buscar</button>
+        {% if busca or status_filtro %}
+        <a href="{% url 'fornecedores:lista' %}" class="btn btn-secondary" aria-label="Limpar filtros">{% icon 'x' 'h-4 w-4' %}</a>
+        {% endif %}
+      </div>
     </form>
 
     {% if user.is_admin %}
-    <a href="{% url 'fornecedores:criar' %}"
-      class="flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white px-4 py-2.5 rounded-lg transition-colors text-sm font-medium flex-shrink-0">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-      </svg>
-      Novo Fornecedor
-    </a>
+    <a href="{{ url_criar }}" class="btn btn-primary lg:shrink-0">{% icon 'plus' 'h-4 w-4' %}Novo Fornecedor</a>
     {% endif %}
   </div>
 
-  <!-- Contador de resultados -->
-  <p class="text-sm dark:text-gray-400 text-gray-500">
-    {{ total }} fornecedor{{ total|pluralize }} encontrado{{ total|pluralize }}
-  </p>
+  <p class="text-sm text-muted" role="status">{{ total }} fornecedor{{ total|pluralize }} encontrado{{ total|pluralize }}</p>
 
-  <!-- Grid de cards de fornecedores -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
     {% for f in fornecedores %}
-    <div class="dark:bg-gray-800 bg-white rounded-xl border dark:border-gray-700 border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-      <!-- Cabeçalho do card -->
-      <div class="px-5 py-4 border-b dark:border-gray-700 border-gray-100">
+    <article class="card card-link flex flex-col overflow-hidden">
+      <div class="border-b border-line px-5 py-4">
         <div class="flex items-start justify-between gap-2">
-          <div class="flex-1 min-w-0">
-            <h3 class="font-display font-semibold dark:text-white text-gray-900 truncate">{{ f }}</h3>
-            {% if f.nome_fantasia and f.nome_fantasia != f.nome %}
-            <p class="text-xs dark:text-gray-400 text-gray-500 truncate">{{ f.nome }}</p>
-            {% endif %}
+          <div class="min-w-0 flex-1">
+            <h3 class="truncate font-semibold tracking-tight"><a href="{% url 'fornecedores:detalhe' f.pk %}" class="hover:underline">{{ f }}</a></h3>
+            {% if f.nome_fantasia and f.nome_fantasia != f.nome %}<p class="truncate text-xs text-subtle">{{ f.nome }}</p>{% endif %}
           </div>
-          <span class="text-xs px-2 py-0.5 rounded-full flex-shrink-0
-            {% if f.status == 'ativo' %}bg-green-900/50 text-green-400
-            {% elif f.status == 'inativo' %}bg-gray-700 text-gray-400
-            {% else %}bg-red-900/50 text-red-400{% endif %}">
-            {{ f.get_status_display }}
-          </span>
+          {% include 'components/entity_status.html' with status=f.status label=f.get_status_display %}
         </div>
       </div>
 
-      <!-- Corpo do card -->
-      <div class="px-5 py-3 space-y-1.5">
-        {% if f.documento %}
-        <div class="flex items-center gap-2 text-sm dark:text-gray-300 text-gray-600">
-          <svg class="w-3.5 h-3.5 dark:text-gray-500 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-          </svg>
-          {{ f.documento }}
-        </div>
-        {% endif %}
-        {% if f.telefone or f.celular %}
-        <div class="flex items-center gap-2 text-sm dark:text-gray-300 text-gray-600">
-          <svg class="w-3.5 h-3.5 dark:text-gray-500 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
-          </svg>
-          {{ f.telefone|default:f.celular }}
-        </div>
-        {% endif %}
-        {% if f.cidade %}
-        <div class="flex items-center gap-2 text-sm dark:text-gray-300 text-gray-600">
-          <svg class="w-3.5 h-3.5 dark:text-gray-500 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-          </svg>
-          {{ f.cidade }}{% if f.estado %}/{{ f.estado }}{% endif %}
-        </div>
-        {% endif %}
-        <div class="flex items-center gap-2 text-sm dark:text-gray-400 text-gray-500">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-          </svg>
-          {{ f.total_produtos }} produto{{ f.total_produtos|pluralize }}
-        </div>
+      <div class="flex-1 space-y-2 px-5 py-4 text-sm text-muted">
+        {% if f.documento %}<p class="flex items-center gap-2.5">{% icon 'document' 'h-4 w-4 shrink-0 text-subtle' %}{{ f.documento }}</p>{% endif %}
+        {% if f.telefone or f.celular %}<p class="flex items-center gap-2.5">{% icon 'phone' 'h-4 w-4 shrink-0 text-subtle' %}{{ f.telefone|default:f.celular }}</p>{% endif %}
+        {% if f.cidade %}<p class="flex items-center gap-2.5">{% icon 'pin' 'h-4 w-4 shrink-0 text-subtle' %}{{ f.cidade }}{% if f.estado %}/{{ f.estado }}{% endif %}</p>{% endif %}
+        <p class="flex items-center gap-2.5 text-subtle">{% icon 'cube' 'h-4 w-4 shrink-0' %}{{ f.total_produtos }} produto{{ f.total_produtos|pluralize }}</p>
       </div>
 
-      <!-- Ações -->
-      <div class="px-5 py-3 border-t dark:border-gray-700 border-gray-100 flex items-center gap-2">
-        <a href="{% url 'fornecedores:detalhe' f.pk %}"
-          class="flex-1 text-center text-sm py-1.5 dark:bg-gray-700 bg-gray-100 dark:text-gray-300 text-gray-700 rounded-lg hover:opacity-80 transition-opacity">
-          Ver
-        </a>
+      <div class="flex items-center gap-2 border-t border-line px-5 py-3">
+        <a href="{% url 'fornecedores:detalhe' f.pk %}" class="btn btn-secondary flex-1" aria-label="Ver {{ f }}">{% icon 'eye' 'h-4 w-4' %}Ver</a>
         {% if user.is_admin %}
-        <a href="{% url 'fornecedores:editar' f.pk %}"
-          class="flex-1 text-center text-sm py-1.5 bg-blue-600/20 text-blue-400 rounded-lg hover:bg-blue-600/30 transition-colors">
-          Editar
-        </a>
-        <a href="{% url 'fornecedores:excluir' f.pk %}"
-          class="text-sm py-1.5 px-3 bg-red-600/20 text-red-400 rounded-lg hover:bg-red-600/30 transition-colors">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-          </svg>
-        </a>
+        <a href="{% url 'fornecedores:editar' f.pk %}" class="btn btn-secondary flex-1" aria-label="Editar {{ f }}">{% icon 'pencil' 'h-4 w-4' %}Editar</a>
+        <a href="{% url 'fornecedores:excluir' f.pk %}" class="btn btn-danger btn-icon" title="Excluir" aria-label="Excluir {{ f }}">{% icon 'trash' 'h-4 w-4' %}</a>
         {% endif %}
       </div>
-    </div>
+    </article>
     {% empty %}
-    <div class="col-span-3 dark:bg-gray-800 bg-white rounded-xl border dark:border-gray-700 border-gray-200 p-12 text-center">
-      <svg class="w-16 h-16 mx-auto mb-4 dark:text-gray-600 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-      </svg>
-      <p class="dark:text-gray-400 text-gray-500 mb-4">Nenhum fornecedor encontrado.</p>
+    <div class="card sm:col-span-2 xl:col-span-3">
       {% if user.is_admin %}
-      <a href="{% url 'fornecedores:criar' %}" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-        Cadastrar primeiro fornecedor
-      </a>
+      {% include 'components/empty_state.html' with icon='office' title='Nenhum fornecedor encontrado' text='Ajuste a busca ou cadastre um novo fornecedor.' action_url=url_criar action_label='Cadastrar primeiro fornecedor' %}
+      {% else %}
+      {% include 'components/empty_state.html' with icon='office' title='Nenhum fornecedor encontrado' text='Ajuste os filtros de busca.' %}
       {% endif %}
     </div>
     {% endfor %}
   </div>
-
 </div>
 {% endblock %}

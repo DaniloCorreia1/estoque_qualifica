@@ -1,0 +1,4 @@
+{% load ui %}{# Badge de tipo de movimentacao. Parametros: tipo, label. entrada = contorno forte; saida = preenchido; ajuste = tracejado. #}<span class="badge mv-{{ tipo }}">
+  {% if tipo == 'entrada' %}{% icon 'inbox-in' 'h-3.5 w-3.5' %}{% elif tipo == 'saida' %}{% icon 'inbox-out' 'h-3.5 w-3.5' %}{% else %}{% icon 'adjust' 'h-3.5 w-3.5' %}{% endif %}
+  {{ label }}
+</span>

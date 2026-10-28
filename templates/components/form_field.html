@@ -1,0 +1,7 @@
+{% load ui %}{# Campo de formulario com rotulo, ajuda e erros junto ao campo. Parametros: field, wrap_class (opc.). #}
+<div class="{{ wrap_class }}">
+  <label for="{{ field.id_for_label }}" class="field-label">{{ field.label }}{% if field.field.required %} <span aria-hidden="true" class="text-subtle">*</span><span class="sr-only">(obrigatório)</span>{% endif %}</label>
+  {{ field }}
+  {% if field.help_text %}<div class="field-help">{{ field.help_text }}</div>{% endif %}
+  {% for e in field.errors %}<p class="field-error" role="alert">{% icon 'alert-circle' 'mt-px h-4 w-4 shrink-0' %}<span>{{ e }}</span></p>{% endfor %}
+</div>

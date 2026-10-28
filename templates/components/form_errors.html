@@ -1,0 +1,12 @@
+{% load ui %}{# Erros gerais do formulario. Parametro: form. #}
+{% if form.non_field_errors %}
+<div class="alert-inline-error" role="alert">
+  {% icon 'x-circle' 'mt-0.5 h-5 w-5 shrink-0' %}
+  <div class="min-w-0 space-y-1">{% for e in form.non_field_errors %}<p>{{ e }}</p>{% endfor %}</div>
+</div>
+{% elif form.errors %}
+<div class="alert-inline-error" role="alert">
+  {% icon 'x-circle' 'mt-0.5 h-5 w-5 shrink-0' %}
+  <p>Não foi possível salvar. Corrija os campos indicados abaixo.</p>
+</div>
+{% endif %}

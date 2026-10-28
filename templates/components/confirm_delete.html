@@ -1,0 +1,19 @@
+{% load ui %}{% comment %}
+  Confirmacao de exclusao. Parametros: title, name (objeto), message (opc.), cancel_url, confirm_label, icon (opc.).
+  Nao usar com "only": precisa do csrf_token do contexto.
+{% endcomment %}
+<div class="mx-auto max-w-lg">
+  <div class="card p-6 text-center sm:p-10">
+    <span class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-dashed border-strong">{% icon icon|default:'trash' 'h-8 w-8' %}</span>
+    <h2 class="text-xl font-bold tracking-tight">{{ title }}</h2>
+    <p class="mt-2 text-sm text-muted">
+      Tem certeza que deseja excluir <strong class="font-semibold text-fg">{{ name }}</strong>?
+      {% if message %}{{ message }}{% endif %}
+    </p>
+    <form method="post" class="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-center">
+      {% csrf_token %}
+      <a href="{{ cancel_url }}" class="btn btn-secondary sm:min-w-[8rem]">Cancelar</a>
+      <button type="submit" class="btn btn-primary sm:min-w-[8rem]">{% icon 'trash' 'h-4 w-4' %}{{ confirm_label|default:'Excluir' }}</button>
+    </form>
+  </div>
+</div>

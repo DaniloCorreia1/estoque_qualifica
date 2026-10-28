@@ -1,501 +1,317 @@
 {% extends 'base.html' %}
+{% load ui %}
 {% block title %}Dashboard — Estoque Qualifica{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
 
 {% block content %}
+{% url 'movimentacoes:entrada' as url_entrada %}
 <div class="space-y-6">
 
-  <!-- ============================================================
-       CARDS DE INDICADORES (topo)
-  ============================================================ -->
-  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-
-    <!-- Total de Produtos -->
-    <div class="dark:bg-gray-800 bg-white rounded-xl p-5 border dark:border-gray-700 border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-      <div class="flex items-center justify-between mb-3">
-        <div class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
-          <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-          </svg>
-        </div>
-        <span class="text-xs font-medium dark:text-gray-500 text-gray-400 uppercase tracking-wide">Produtos</span>
+  <!-- ============ HERO ============ -->
+  <section class="hero relative overflow-hidden p-6 sm:p-8" aria-labelledby="hero-titulo">
+    <div class="dotgrid pointer-events-none absolute inset-0 opacity-20" aria-hidden="true"></div>
+    <div class="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+      <div class="min-w-0">
+        <p class="text-xs font-medium uppercase tracking-widest text-white/60">Visão geral · {% now "d/m/Y" %}</p>
+        <h2 id="hero-titulo" class="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Olá, {{ user.nome_exibicao }}</h2>
+        <p class="mt-2 max-w-xl text-sm text-white/70">
+          {% if produtos_alerta > 0 %}
+            {{ produtos_alerta }} produto{{ produtos_alerta|pluralize }} com estoque no mínimo ou zerado. Registre uma entrada ou revise a lista.
+          {% else %}
+            Tudo certo por aqui: nenhum produto abaixo do estoque mínimo.
+          {% endif %}
+        </p>
       </div>
-      <div class="font-display font-bold text-3xl dark:text-white text-gray-900">{{ total_produtos }}</div>
-      <div class="text-xs dark:text-gray-400 text-gray-500 mt-1">ativos no sistema</div>
+      <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap lg:justify-end">
+        <a href="{% url 'movimentacoes:entrada' %}" class="btn whitespace-nowrap px-3 bg-white text-black hover:bg-neutral-200">{% icon 'inbox-in' 'h-4 w-4' %}Nova Entrada</a>
+        <a href="{% url 'movimentacoes:saida' %}" class="btn whitespace-nowrap px-3 border-white/30 bg-white/10 text-white hover:bg-white/20">{% icon 'inbox-out' 'h-4 w-4' %}Nova Saída</a>
+        <a href="{% url 'produtos:criar' %}" class="btn whitespace-nowrap px-3 border-white/30 text-white hover:bg-white/10">{% icon 'cube' 'h-4 w-4' %}Novo Produto</a>
+        <a href="{% url 'relatorios:home' %}" class="btn whitespace-nowrap px-3 border-white/30 text-white hover:bg-white/10">{% icon 'report' 'h-4 w-4' %}Relatórios</a>
+      </div>
     </div>
+  </section>
 
-    <!-- Valor do Estoque -->
-    <div class="dark:bg-gray-800 bg-white rounded-xl p-5 border dark:border-gray-700 border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-      <div class="flex items-center justify-between mb-3">
-        <div class="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
-          <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
-        </div>
-        <span class="text-xs font-medium dark:text-gray-500 text-gray-400 uppercase tracking-wide">Valor</span>
-      </div>
-      <div class="font-display font-bold text-2xl dark:text-white text-gray-900">
-        R$ {{ valor_estoque|floatformat:0 }}
-      </div>
-      <div class="text-xs dark:text-gray-400 text-gray-500 mt-1">total em estoque</div>
-    </div>
+  <!-- ============ INDICADORES ============ -->
+  <section class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4" aria-label="Indicadores">
+    {% include 'components/stat_card.html' with label='Produtos' value=total_produtos hint='ativos no sistema' icon='cube' %}
+    {% include 'components/stat_card.html' with label='Valor' value=valor_estoque|brl:0 hint='total em estoque' icon='currency' %}
+    {% if produtos_alerta > 0 %}
+      {% include 'components/stat_card.html' with label='Alertas' value=produtos_alerta hint='estoque crítico ou zerado' icon='warning' emphasis=True %}
+    {% else %}
+      {% include 'components/stat_card.html' with label='Alertas' value=produtos_alerta hint='estoque crítico' icon='check-circle' %}
+    {% endif %}
+    {% include 'components/stat_card.html' with label='Mês' value=movimentacoes_mes hint='movimentações' icon='switch' %}
+  </section>
 
-    <!-- Alertas -->
-    <div class="dark:bg-gray-800 bg-white rounded-xl p-5 border dark:border-gray-700 border-gray-200 shadow-sm hover:shadow-md transition-shadow
-      {% if produtos_alerta > 0 %}border-l-4 border-l-red-500{% endif %}">
-      <div class="flex items-center justify-between mb-3">
-        <div class="w-10 h-10 {% if produtos_alerta > 0 %}bg-red-500/20{% else %}bg-gray-500/20{% endif %} rounded-lg flex items-center justify-center">
-          <svg class="w-5 h-5 {% if produtos_alerta > 0 %}text-red-400{% else %}text-gray-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-          </svg>
-        </div>
-        <span class="text-xs font-medium dark:text-gray-500 text-gray-400 uppercase tracking-wide">Alertas</span>
-      </div>
-      <div class="font-display font-bold text-3xl {% if produtos_alerta > 0 %}text-red-400{% else %}dark:text-white text-gray-900{% endif %}">
-        {{ produtos_alerta }}
-      </div>
-      <div class="text-xs dark:text-gray-400 text-gray-500 mt-1">estoque crítico</div>
-    </div>
+  <!-- ============ IA + ROSCA ============ -->
+  <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
 
-    <!-- Movimentações do mês -->
-    <div class="dark:bg-gray-800 bg-white rounded-xl p-5 border dark:border-gray-700 border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-      <div class="flex items-center justify-between mb-3">
-        <div class="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
-          <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
-          </svg>
-        </div>
-        <span class="text-xs font-medium dark:text-gray-500 text-gray-400 uppercase tracking-wide">Mês</span>
-      </div>
-      <div class="font-display font-bold text-3xl dark:text-white text-gray-900">{{ movimentacoes_mes }}</div>
-      <div class="text-xs dark:text-gray-400 text-gray-500 mt-1">movimentações</div>
-    </div>
-  </div>
-
-  <!-- ============================================================
-       PAINEL DE IA + GRÁFICOS (linha do meio)
-  ============================================================ -->
-  <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-
-    <!-- BLOCO DE IA (2/3 da largura) -->
-    <div class="xl:col-span-2 dark:bg-gray-800 bg-white rounded-xl border dark:border-gray-700 border-gray-200 shadow-sm overflow-hidden">
-      <!-- Cabeçalho do bloco IA -->
-      <div class="px-6 py-4 border-b dark:border-gray-700 border-gray-200 flex items-center justify-between">
+    <section class="card overflow-hidden xl:col-span-2" aria-labelledby="ia-titulo">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4 sm:px-6">
         <div class="flex items-center gap-3">
-          <div class="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
-            <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
-            </svg>
-          </div>
+          <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-neutral-700 to-black text-white dark:from-white dark:to-neutral-400 dark:text-black">{% icon 'sparkles' 'h-5 w-5' %}</span>
           <div>
-            <h3 class="font-display font-semibold dark:text-white text-gray-900 text-sm">Análise Inteligente de Estoque</h3>
-            <p class="text-xs dark:text-gray-400 text-gray-500">Powered by OpenAI GPT</p>
+            <h3 id="ia-titulo" class="text-sm font-semibold">Análise Inteligente de Estoque</h3>
+            <p class="text-xs text-subtle">Powered by OpenAI GPT</p>
           </div>
         </div>
-        <button id="btn-analisar" onclick="analisarEstoque()"
-          class="flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-all active:scale-95">
-          <svg class="w-4 h-4" id="ia-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M17.657 17.657l-.707-.707M12 20v1M6.343 17.657l-.707-.707M4 12H3M6.343 6.343l-.707-.707"/>
-          </svg>
+        <button type="button" id="btn-analisar" onclick="analisarEstoque()" class="btn btn-primary">
+          <span id="ia-icon">{% icon 'sparkles' 'h-4 w-4' %}</span>
           <span id="ia-btn-text">Analisar Agora</span>
         </button>
       </div>
 
-      <!-- Área de resultado da IA -->
-      <div class="p-6">
-        <!-- Estado inicial -->
-        <div id="ia-idle" class="text-center py-8">
-          <div class="w-16 h-16 mx-auto mb-4 bg-green-500/10 rounded-2xl flex items-center justify-center">
-            <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2h-2"/>
-            </svg>
-          </div>
-          <p class="dark:text-gray-400 text-gray-500 text-sm">
-            Clique em <strong class="text-green-400">Analisar Agora</strong> para obter insights inteligentes<br>
+      <div class="p-5 sm:p-6" aria-live="polite">
+        <div id="ia-idle" class="py-8 text-center">
+          <span class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-dashed border-strong text-subtle">{% icon 'sparkles' 'h-7 w-7' %}</span>
+          <p class="text-sm text-muted">
+            Clique em <strong class="font-semibold text-fg">Analisar Agora</strong> para obter insights<br class="hidden sm:inline">
             sobre seu estoque usando IA.
           </p>
         </div>
 
-        <!-- Loading -->
-        <div id="ia-loading" class="hidden text-center py-8">
-          <div class="inline-flex items-center gap-3 text-green-400">
-            <svg class="animate-spin w-6 h-6" fill="none" viewBox="0 0 24 24">
+        <div id="ia-loading" class="hidden py-8 text-center">
+          <div class="inline-flex items-center gap-3 font-medium">
+            <svg class="h-6 w-6 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
             </svg>
-            <span class="font-medium">Analisando seu estoque...</span>
+            Analisando seu estoque...
           </div>
-          <p class="text-xs dark:text-gray-500 text-gray-400 mt-2">A IA está processando os dados</p>
+          <p class="mt-2 text-xs text-subtle">A IA está processando os dados</p>
         </div>
 
-        <!-- Resultado da análise -->
         <div id="ia-resultado" class="hidden">
-          <div class="flex items-center gap-2 mb-4">
-            <span class="inline-flex items-center gap-1 bg-green-900/40 text-green-400 text-xs font-medium px-2.5 py-1 rounded-full border border-green-800">
-              <span class="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
-              Análise gerada por IA
-            </span>
-            <span id="ia-modo-badge" class="text-xs dark:text-gray-500 text-gray-400"></span>
+          <div class="mb-4 flex flex-wrap items-center gap-2">
+            <span class="badge st-normal">{% icon 'sparkles' 'h-3.5 w-3.5' %}Análise gerada por IA</span>
+            <span id="ia-modo-badge" class="text-xs text-subtle"></span>
           </div>
-          <div id="ia-texto"
-            class="dark:text-gray-300 text-gray-700 text-sm leading-relaxed whitespace-pre-wrap dark:bg-gray-750 bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 border dark:border-gray-700 border-gray-200">
-          </div>
-          <p class="text-xs dark:text-gray-500 text-gray-400 mt-3 text-right">
-            Atualizado em: <span id="ia-timestamp"></span>
-          </p>
+          <div id="ia-texto" class="rounded-xl border border-line bg-surface2 p-4 text-sm leading-relaxed text-fg"></div>
+          <p class="mt-3 text-right text-xs text-subtle">Atualizado em: <span id="ia-timestamp"></span></p>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- GRÁFICO DE ROSCA (1/3) -->
-    <div class="dark:bg-gray-800 bg-white rounded-xl border dark:border-gray-700 border-gray-200 shadow-sm p-6">
-      <h3 class="font-display font-semibold dark:text-white text-gray-900 text-sm mb-4">Produtos por Categoria</h3>
+    <section class="card p-5 sm:p-6" aria-labelledby="rosca-titulo">
+      <h3 id="rosca-titulo" class="mb-4 text-sm font-semibold">Produtos por Categoria</h3>
       {% if cat_labels_json != '[]' %}
-      <div class="relative h-48">
-        <canvas id="chartRosca"></canvas>
-      </div>
-      <div id="legenda-rosca" class="mt-4 space-y-1.5"></div>
+      <div class="relative h-48"><canvas id="chartRosca" role="img" aria-label="Gráfico de rosca com a quantidade de produtos por categoria"></canvas></div>
+      <ul id="legenda-rosca" class="mt-4 space-y-2"></ul>
       {% else %}
-      <div class="flex flex-col items-center justify-center h-48 dark:text-gray-500 text-gray-400">
-        <svg class="w-12 h-12 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-        </svg>
-        <p class="text-sm">Sem dados de categorias</p>
-      </div>
+      {% include 'components/empty_state.html' with icon='report' title='Sem dados de categorias' text='Cadastre produtos com categoria para ver a distribuição.' %}
       {% endif %}
-    </div>
+    </section>
   </div>
 
-  <!-- ============================================================
-       GRÁFICO DE LINHA (movimentações da semana) + ALERTAS
-  ============================================================ -->
-  <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+  <!-- ============ LINHA + CRÍTICOS ============ -->
+  <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
 
-    <!-- Gráfico de linha -->
-    <div class="xl:col-span-2 dark:bg-gray-800 bg-white rounded-xl border dark:border-gray-700 border-gray-200 shadow-sm p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="font-display font-semibold dark:text-white text-gray-900 text-sm">Movimentações — Últimos 7 dias</h3>
-        <div class="flex items-center gap-4 text-xs">
-          <span class="flex items-center gap-1.5 dark:text-gray-400 text-gray-500">
-            <span class="w-3 h-1 bg-green-500 rounded-full inline-block"></span>Entradas
-          </span>
-          <span class="flex items-center gap-1.5 dark:text-gray-400 text-gray-500">
-            <span class="w-3 h-1 bg-red-500 rounded-full inline-block"></span>Saídas
-          </span>
-        </div>
+    <section class="card p-5 sm:p-6 xl:col-span-2" aria-labelledby="linha-titulo">
+      <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h3 id="linha-titulo" class="text-sm font-semibold">Movimentações — Últimos 7 dias</h3>
+        <ul class="flex items-center gap-4 text-xs text-muted">
+          <li class="flex items-center gap-2"><span class="inline-block w-6 border-t-2 border-fg" aria-hidden="true"></span>Entradas</li>
+          <li class="flex items-center gap-2"><span class="inline-block w-6 border-t-2 border-dashed border-subtle" aria-hidden="true"></span>Saídas</li>
+        </ul>
       </div>
-      <div class="h-48">
-        <canvas id="chartLinha"></canvas>
-      </div>
-    </div>
+      <div class="relative h-52 sm:h-60"><canvas id="chartLinha" role="img" aria-label="Gráfico de linhas com entradas e saídas dos últimos 7 dias"></canvas></div>
+    </section>
 
-    <!-- Produtos Críticos -->
-    <div class="dark:bg-gray-800 bg-white rounded-xl border dark:border-gray-700 border-gray-200 shadow-sm overflow-hidden">
-      <div class="px-5 py-4 border-b dark:border-gray-700 border-gray-200 flex items-center justify-between">
-        <h3 class="font-display font-semibold dark:text-white text-gray-900 text-sm">⚠️ Estoque Crítico</h3>
-        <a href="{% url 'produtos:lista' %}?estoque=baixo"
-          class="text-xs text-green-400 hover:text-green-300 transition-colors">Ver todos →</a>
+    <section class="card overflow-hidden" aria-labelledby="criticos-titulo">
+      <div class="flex items-center justify-between gap-2 border-b border-line px-5 py-4">
+        <h3 id="criticos-titulo" class="flex items-center gap-2 text-sm font-semibold">{% icon 'warning' 'h-4 w-4' %}Estoque Crítico</h3>
+        <a href="{% url 'produtos:lista' %}?estoque=baixo" class="inline-flex min-h-[44px] items-center gap-1 text-xs font-medium text-muted underline-offset-4 hover:text-fg hover:underline">Ver todos {% icon 'arrow-right' 'h-3.5 w-3.5' %}</a>
       </div>
-      <div class="divide-y dark:divide-gray-700 divide-gray-100">
+      <ul class="divide-y divide-line">
         {% for produto in produtos_criticos %}
-        <div class="px-5 py-3 hover:dark:bg-gray-750 hover:bg-gray-50 transition-colors">
-          <div class="flex items-center justify-between gap-2">
-            <div class="min-w-0 flex-1">
-              <p class="text-sm font-medium dark:text-white text-gray-900 truncate">{{ produto.nome }}</p>
-              <p class="text-xs dark:text-gray-400 text-gray-500">{{ produto.codigo }}</p>
-            </div>
-            <div class="text-right flex-shrink-0">
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
-                {% if produto.esta_zerado %}bg-red-900 text-red-300{% else %}bg-yellow-900 text-yellow-300{% endif %}">
-                {{ produto.quantidade|floatformat:0 }} {{ produto.get_unidade_display }}
-              </span>
-            </div>
-          </div>
-        </div>
+        <li>
+          <a href="{% url 'produtos:detalhe' produto.pk %}" class="flex items-center justify-between gap-3 px-5 py-3 transition hover:bg-surface2 motion-reduce:transition-none">
+            <span class="min-w-0">
+              <span class="block truncate text-sm font-medium">{{ produto.nome }}</span>
+              <span class="block text-xs text-subtle">{{ produto.codigo }} · {{ produto.quantidade|qtd }} {{ produto.get_unidade_display }}</span>
+            </span>
+            {% include 'components/status_badge.html' with produto=produto %}
+          </a>
+        </li>
         {% empty %}
-        <div class="px-5 py-8 text-center">
-          <span class="text-3xl">✅</span>
-          <p class="text-sm dark:text-gray-400 text-gray-500 mt-2">Todos os produtos estão OK!</p>
-        </div>
+        <li>{% include 'components/empty_state.html' with icon='check-circle' title='Todos os produtos estão OK' text='Nenhum item abaixo do estoque mínimo.' %}</li>
         {% endfor %}
+      </ul>
+    </section>
+  </div>
+
+  <!-- ============ ÚLTIMAS MOVIMENTAÇÕES ============ -->
+  <section aria-labelledby="ultimas-titulo">
+    <div class="mb-3 flex items-center justify-between gap-2">
+      <h3 id="ultimas-titulo" class="text-sm font-semibold">Últimas Movimentações</h3>
+      <a href="{% url 'movimentacoes:lista' %}" class="inline-flex min-h-[44px] items-center gap-1 text-xs font-medium text-muted underline-offset-4 hover:text-fg hover:underline">Ver todas {% icon 'arrow-right' 'h-3.5 w-3.5' %}</a>
+    </div>
+    <div class="tcard">
+      <div class="tscroll">
+        <table class="rtable">
+          <thead>
+            <tr>
+              <th scope="col">Produto</th>
+              <th scope="col">Tipo</th>
+              <th scope="col" class="text-right">Qtd</th>
+              <th scope="col" class="col-lg">Usuário</th>
+              <th scope="col" class="col-lg">Data</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for mov in ultimas_movimentacoes %}
+            <tr>
+              <td class="cell-main">
+                <p class="font-medium">{{ mov.produto.nome }}</p>
+                <p class="text-xs text-subtle">{{ mov.produto.codigo }}</p>
+              </td>
+              <td data-label="Tipo">{% include 'components/mov_badge.html' with tipo=mov.tipo label=mov.get_tipo_display %}</td>
+              <td data-label="Qtd" class="num font-medium">{% if mov.tipo == 'entrada' %}+{% elif mov.tipo == 'saida' %}−{% endif %}{{ mov.quantidade|qtd }}</td>
+              <td data-label="Usuário" class="col-lg text-xs text-muted">{{ mov.usuario.nome_exibicao|default:"—" }}</td>
+              <td data-label="Data" class="col-lg text-xs text-muted">{{ mov.criado_em|date:"d/m/Y H:i" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="cell-empty">{% include 'components/empty_state.html' with icon='switch' title='Nenhuma movimentação registrada ainda' text='Registre a primeira entrada ou saída para começar.' action_url=url_entrada action_label='Nova Entrada' %}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
     </div>
-  </div>
-
-  <!-- ============================================================
-       ÚLTIMAS MOVIMENTAÇÕES
-  ============================================================ -->
-  <div class="dark:bg-gray-800 bg-white rounded-xl border dark:border-gray-700 border-gray-200 shadow-sm overflow-hidden">
-    <div class="px-6 py-4 border-b dark:border-gray-700 border-gray-200 flex items-center justify-between">
-      <h3 class="font-display font-semibold dark:text-white text-gray-900 text-sm">Últimas Movimentações</h3>
-      <a href="{% url 'movimentacoes:lista' %}"
-        class="text-xs text-green-400 hover:text-green-300 transition-colors">Ver todas →</a>
-    </div>
-
-    <!-- Tabela responsiva -->
-    <div class="overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="dark:bg-gray-750 bg-gray-50 dark:bg-gray-900/50">
-            <th class="text-left px-6 py-3 text-xs font-medium dark:text-gray-400 text-gray-500 uppercase tracking-wider">Produto</th>
-            <th class="text-left px-4 py-3 text-xs font-medium dark:text-gray-400 text-gray-500 uppercase tracking-wider hidden sm:table-cell">Tipo</th>
-            <th class="text-right px-4 py-3 text-xs font-medium dark:text-gray-400 text-gray-500 uppercase tracking-wider">Qtd</th>
-            <th class="text-left px-4 py-3 text-xs font-medium dark:text-gray-400 text-gray-500 uppercase tracking-wider hidden md:table-cell">Usuário</th>
-            <th class="text-left px-6 py-3 text-xs font-medium dark:text-gray-400 text-gray-500 uppercase tracking-wider hidden lg:table-cell">Data</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y dark:divide-gray-700 divide-gray-100">
-          {% for mov in ultimas_movimentacoes %}
-          <tr class="hover:dark:bg-gray-750 hover:bg-gray-50 transition-colors">
-            <td class="px-6 py-3">
-              <div>
-                <p class="font-medium dark:text-white text-gray-900">{{ mov.produto.nome }}</p>
-                <p class="text-xs dark:text-gray-500 text-gray-400">{{ mov.produto.codigo }}</p>
-              </div>
-            </td>
-            <td class="px-4 py-3 hidden sm:table-cell">
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                {% if mov.tipo == 'entrada' %}bg-green-900/60 text-green-300
-                {% elif mov.tipo == 'saida' %}bg-red-900/60 text-red-300
-                {% elif mov.tipo == 'ajuste' %}bg-blue-900/60 text-blue-300
-                {% else %}bg-gray-700 text-gray-300{% endif %}">
-                {{ mov.get_tipo_display }}
-              </span>
-            </td>
-            <td class="px-4 py-3 text-right font-medium dark:text-white text-gray-900">
-              {{ mov.quantidade|floatformat:2 }}
-            </td>
-            <td class="px-4 py-3 hidden md:table-cell dark:text-gray-400 text-gray-500 text-xs">
-              {{ mov.usuario.nome_exibicao|default:"-" }}
-            </td>
-            <td class="px-6 py-3 hidden lg:table-cell dark:text-gray-400 text-gray-500 text-xs">
-              {{ mov.criado_em|date:"d/m/Y H:i" }}
-            </td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="5" class="px-6 py-8 text-center dark:text-gray-400 text-gray-500">
-              Nenhuma movimentação registrada ainda.
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Atalhos rápidos -->
-  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-    <a href="{% url 'movimentacoes:entrada' %}"
-      class="flex items-center gap-3 p-4 bg-green-600 hover:bg-green-500 text-white rounded-xl transition-all hover:shadow-lg hover:shadow-green-900/30 active:scale-95">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-      </svg>
-      <span class="font-medium text-sm">Nova Entrada</span>
-    </a>
-    <a href="{% url 'movimentacoes:saida' %}"
-      class="flex items-center gap-3 p-4 bg-red-600 hover:bg-red-500 text-white rounded-xl transition-all hover:shadow-lg hover:shadow-red-900/30 active:scale-95">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
-      </svg>
-      <span class="font-medium text-sm">Nova Saída</span>
-    </a>
-    <a href="{% url 'produtos:criar' %}"
-      class="flex items-center gap-3 p-4 dark:bg-gray-800 bg-white dark:hover:bg-gray-700 hover:bg-gray-50 dark:text-white text-gray-900 rounded-xl transition-all border dark:border-gray-700 border-gray-200 active:scale-95">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-      </svg>
-      <span class="font-medium text-sm">Novo Produto</span>
-    </a>
-    <a href="{% url 'relatorios:home' %}"
-      class="flex items-center gap-3 p-4 dark:bg-gray-800 bg-white dark:hover:bg-gray-700 hover:bg-gray-50 dark:text-white text-gray-900 rounded-xl transition-all border dark:border-gray-700 border-gray-200 active:scale-95">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-      </svg>
-      <span class="font-medium text-sm">Relatórios</span>
-    </a>
-  </div>
+  </section>
 
 </div>
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% include 'components/chart_theme.html' %}
 <script>
-  // ============================================================
-  // DADOS DOS GRÁFICOS (vindos do Django via JSON)
-  // ============================================================
-  const diasLabels    = {{ dias_labels_json|safe }};
-  const entradasData  = {{ entradas_semana_json|safe }};
-  const saidasData    = {{ saidas_semana_json|safe }};
-  const catLabels     = {{ cat_labels_json|safe }};
-  const catQtd        = {{ cat_qtd_json|safe }};
+  // Dados do servidor (JSON já serializado na view). escapejs impede quebra do <script> por nomes de categoria.
+  var diasLabels   = JSON.parse('{{ dias_labels_json|escapejs }}');
+  var entradasData = JSON.parse('{{ entradas_semana_json|escapejs }}');
+  var saidasData   = JSON.parse('{{ saidas_semana_json|escapejs }}');
+  var catLabels    = JSON.parse('{{ cat_labels_json|escapejs }}');
+  var catQtd       = JSON.parse('{{ cat_qtd_json|escapejs }}');
 
-  const isDark = document.documentElement.classList.contains('dark');
-  const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
-  const labelColor = isDark ? '#9ca3af' : '#6b7280';
-
-  // ============================================================
-  // GRÁFICO DE LINHA — movimentações da semana
-  // ============================================================
-  const ctxLinha = document.getElementById('chartLinha').getContext('2d');
-  new Chart(ctxLinha, {
+  // ===== Linha: entradas (sólida) x saídas (tracejada, marcador quadrado) =====
+  var chartLinha = new Chart(document.getElementById('chartLinha').getContext('2d'), {
     type: 'line',
     data: {
       labels: diasLabels,
       datasets: [
-        {
-          label: 'Entradas',
-          data: entradasData,
-          borderColor: '#22c55e',
-          backgroundColor: 'rgba(34,197,94,0.1)',
-          borderWidth: 2,
-          fill: true,
-          tension: 0.4,
-          pointBackgroundColor: '#22c55e',
-          pointRadius: 4,
-        },
-        {
-          label: 'Saídas',
-          data: saidasData,
-          borderColor: '#ef4444',
-          backgroundColor: 'rgba(239,68,68,0.1)',
-          borderWidth: 2,
-          fill: true,
-          tension: 0.4,
-          pointBackgroundColor: '#ef4444',
-          pointRadius: 4,
-        }
+        { label: 'Entradas', data: entradasData, borderWidth: 2, borderColor: ChartTheme.c('--c-fg'), pointBackgroundColor: ChartTheme.c('--c-fg'), pointBorderColor: ChartTheme.c('--c-fg'), fill: true, tension: 0.35, pointRadius: 4, pointStyle: 'circle' },
+        { label: 'Saídas',   data: saidasData,   borderWidth: 2, borderColor: ChartTheme.c('--c-subtle'), pointBackgroundColor: ChartTheme.c('--c-subtle'), pointBorderColor: ChartTheme.c('--c-subtle'), fill: false, tension: 0.35, pointRadius: 4, pointStyle: 'rect', borderDash: [6, 4] }
       ]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
       plugins: { legend: { display: false } },
-      scales: {
-        x: {
-          grid: { color: gridColor },
-          ticks: { color: labelColor, font: { size: 11 } }
-        },
-        y: {
-          grid: { color: gridColor },
-          ticks: { color: labelColor, font: { size: 11 } },
-          beginAtZero: true
-        }
-      }
+      scales: { x: { grid: { display: false } }, y: { beginAtZero: true } }
     }
   });
+  ChartTheme.onTheme(function () {
+    var fg = ChartTheme.c('--c-fg'), sub = ChartTheme.c('--c-subtle');
+    var e = chartLinha.data.datasets[0], s = chartLinha.data.datasets[1];
+    e.borderColor = fg; e.pointBackgroundColor = fg; e.backgroundColor = ChartTheme.c('--c-fg', 0.08);
+    s.borderColor = sub; s.pointBackgroundColor = sub;
+    chartLinha.options.scales.x.ticks = { color: sub };
+    chartLinha.options.scales.y.ticks = { color: sub, precision: 0 };
+    chartLinha.options.scales.y.grid = { color: ChartTheme.c('--c-line', 0.9) };
+    chartLinha.update('none');
+  });
 
-  // ============================================================
-  // GRÁFICO DE ROSCA — produtos por categoria
-  // ============================================================
-  if (catLabels.length > 0) {
-    const cores = ['#22c55e','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#06b6d4'];
-    const ctxRosca = document.getElementById('chartRosca').getContext('2d');
-    new Chart(ctxRosca, {
+  // ===== Rosca: tons de cinza =====
+  var elRosca = document.getElementById('chartRosca');
+  if (elRosca && catLabels.length > 0) {
+    var chartRosca = new Chart(elRosca.getContext('2d'), {
       type: 'doughnut',
-      data: {
-        labels: catLabels,
-        datasets: [{
-          data: catQtd,
-          backgroundColor: cores.slice(0, catLabels.length),
-          borderColor: isDark ? '#1f2937' : '#ffffff',
-          borderWidth: 3,
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        cutout: '65%',
-      }
+      data: { labels: catLabels, datasets: [{ data: catQtd, borderWidth: 3, backgroundColor: ChartTheme.shades(catLabels.length), borderColor: ChartTheme.c('--c-surface') }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '68%' }
     });
-
-    // Legenda personalizada
-    const legenda = document.getElementById('legenda-rosca');
-    catLabels.forEach((label, i) => {
-      legenda.innerHTML += `
-        <div class="flex items-center justify-between text-xs">
-          <div class="flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:${cores[i]}"></span>
-            <span class="dark:text-gray-300 text-gray-600 truncate max-w-24">${label}</span>
-          </div>
-          <span class="font-medium dark:text-white text-gray-900">${catQtd[i]}</span>
-        </div>
-      `;
+    var legenda = document.getElementById('legenda-rosca');
+    ChartTheme.onTheme(function () {
+      var cores = ChartTheme.shades(catLabels.length);
+      chartRosca.data.datasets[0].backgroundColor = cores;
+      chartRosca.data.datasets[0].borderColor = ChartTheme.c('--c-surface');
+      chartRosca.update('none');
+      // Legenda (texto via textContent: nomes de categoria nunca viram HTML)
+      legenda.textContent = '';
+      catLabels.forEach(function (label, i) {
+        var li = document.createElement('li');
+        li.className = 'flex items-center justify-between gap-3 text-xs';
+        var left = document.createElement('span');
+        left.className = 'flex min-w-0 items-center gap-2 text-muted';
+        var sw = document.createElement('span');
+        sw.className = 'inline-block h-2.5 w-2.5 shrink-0 rounded-sm border border-line';
+        sw.style.background = cores[i];
+        var tx = document.createElement('span');
+        tx.className = 'truncate'; tx.textContent = label;
+        left.appendChild(sw); left.appendChild(tx);
+        var n = document.createElement('span');
+        n.className = 'font-semibold tabular-nums'; n.textContent = catQtd[i];
+        li.appendChild(left); li.appendChild(n);
+        legenda.appendChild(li);
+      });
     });
   }
 
-  // ============================================================
-  // FUNÇÃO DA IA — chama o endpoint Django
-  // ============================================================
-  function analisarEstoque() {
-    const btn = document.getElementById('btn-analisar');
-    const btnText = document.getElementById('ia-btn-text');
-    const iaIcon = document.getElementById('ia-icon');
-    const idle = document.getElementById('ia-idle');
-    const loading = document.getElementById('ia-loading');
-    const resultado = document.getElementById('ia-resultado');
+  // ===== IA =====
+  function escaparHtml(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
 
-    // Mostra loading
+  function analisarEstoque() {
+    var btn = document.getElementById('btn-analisar');
+    var btnText = document.getElementById('ia-btn-text');
+    var iaIcon = document.getElementById('ia-icon');
+    var idle = document.getElementById('ia-idle');
+    var loading = document.getElementById('ia-loading');
+    var resultado = document.getElementById('ia-resultado');
+
     btn.disabled = true;
+    btn.setAttribute('aria-busy', 'true');
     btnText.textContent = 'Analisando...';
-    iaIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>';
     iaIcon.classList.add('animate-spin');
     idle.classList.add('hidden');
     resultado.classList.add('hidden');
     loading.classList.remove('hidden');
 
-    // Faz a chamada POST para o Django
     fetch('{% url "core:ia_analise" %}', {
       method: 'POST',
-      headers: {
-        'X-CSRFToken': getCookie('csrftoken'),
-        'Content-Type': 'application/json'
-      },
+      headers: { 'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/json' },
       body: JSON.stringify({})
     })
-    .then(r => r.json())
-    .then(data => {
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
       loading.classList.add('hidden');
       resultado.classList.remove('hidden');
-
-      // Formata o texto com markdown simples
-      let texto = data.analise || 'Sem análise disponível.';
-      texto = texto.replace(/\*\*(.*?)\*\*/g, '<strong class="dark:text-white text-gray-900">$1</strong>');
-      texto = texto.replace(/\n/g, '<br>');
-
+      var texto = escaparHtml(data.analise || 'Sem análise disponível.');
+      texto = texto.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>').replace(/\n/g, '<br>');
       document.getElementById('ia-texto').innerHTML = texto;
-      document.getElementById('ia-modo-badge').textContent =
-        data.modo === 'openai' ? '✨ via OpenAI GPT' : '🔧 modo offline';
+      document.getElementById('ia-modo-badge').textContent = data.modo === 'openai' ? 'via OpenAI GPT' : 'modo offline';
       document.getElementById('ia-timestamp').textContent = new Date().toLocaleString('pt-BR');
     })
-    .catch(err => {
+    .catch(function () {
       loading.classList.add('hidden');
       resultado.classList.remove('hidden');
-      document.getElementById('ia-texto').textContent = '❌ Erro ao conectar com a IA. Verifique sua conexão.';
+      document.getElementById('ia-texto').textContent = 'Erro ao conectar com a IA. Verifique sua conexão.';
     })
-    .finally(() => {
+    .finally(function () {
       btn.disabled = false;
+      btn.removeAttribute('aria-busy');
       btnText.textContent = 'Atualizar Análise';
       iaIcon.classList.remove('animate-spin');
     });
   }
 
-  // Pega o cookie CSRF do Django (necessário para requisições POST)
   function getCookie(name) {
-    let val = null;
+    var val = null;
     if (document.cookie) {
-      document.cookie.split(';').forEach(c => {
-        const [k, v] = c.trim().split('=');
-        if (k === name) val = decodeURIComponent(v);
+      document.cookie.split(';').forEach(function (c) {
+        var i = c.indexOf('=');
+        var k = c.slice(0, i).trim();
+        if (k === name) val = decodeURIComponent(c.slice(i + 1));
       });
     }
     return val;

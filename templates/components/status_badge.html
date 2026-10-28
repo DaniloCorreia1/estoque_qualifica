@@ -1,0 +1,8 @@
+{% load ui %}{% comment %}
+  Badge do status de estoque (produto.status_estoque). Parametro: produto.
+  Distingue SEM cor: normal = contorno claro; alerta = cinza preenchido; critico = solido invertido;
+  zerado = tracejado listrado. Sempre com icone + texto.
+{% endcomment %}{% with s=produto|nivel_estoque %}<span class="badge st-{{ s }}" title="Estoque: {% status_label s %}">
+  {% if s == 'critico' %}{% icon 'warning' 'h-3.5 w-3.5' %}{% elif s == 'zerado' %}{% icon 'ban' 'h-3.5 w-3.5' %}{% elif s == 'alerta' %}{% icon 'alert-circle' 'h-3.5 w-3.5' %}{% else %}{% icon 'check-circle' 'h-3.5 w-3.5' %}{% endif %}
+  {% status_label s %}
+</span>{% endwith %}
